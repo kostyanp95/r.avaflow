@@ -1,0 +1,35 @@
+FROM mundialis/grass-py3-pdal:8.2.1-ubuntu
+
+WORKDIR /r.avaflow
+
+COPY . .
+
+# Update packages repository, install locate
+RUN apt-get update && \
+    apt-get install -y locales && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
+
+# Define common env variable
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Europe/Moscow \
+    LC_ALL=en_US.UTF-8
+
+RUN apt update && \
+    apt install python3-pip -y && \
+    python3 -m pip install --upgrade pillow
+
+#12 Installing R statistical software
+RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/' && \
+    apt update -y && \
+    apt install r-base r-base-core -y
+
+#13 Installing necessary additional R packages
+RUN echo 'install.packages(c("stats","foreign","sp","rgeos","rgdal","raster","maptools","ROCR","fmsb", "Rcpp"), lib="/usr/lib/R/library/", repos = "http://cran.case.edu" )' > ./r.avaflow/install.packages.R && \
+    R CMD BATCH ./r.avaflow/install.packages.R
+
+# Start grass in temporary directory and install r.avaflow extension
+# RUN grass -e -c XY ./projects/TEMP_GISDBASE/TEMP_LOCATION/ --exec g.extension extension=r.avaflow url=./avaflow/
+
+# Clean temp GRASS GIS locations
+# RUN rm -rf ./projects/TEMP_GISDBASE
