@@ -1,0 +1,22 @@
+.history
+.vscode
+/app
+
+# Local workspace configuration
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.Codex/
+.codex/
+.claude/
+.agents/
+.mcp.json
+.zcodeignore
+.zcode/
+reports/
+*REPORT.md
+deploy/README.md
+
+# Environment overrides (keep the public template)
+.env.*
+!.env.example
