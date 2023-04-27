@@ -19,12 +19,12 @@ RUN apt update && \
     apt install python3-pip -y && \
     python3 -m pip install --upgrade pillow
 
-#12 Installing R statistical software
+# Installing R statistical software
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/' && \
     apt update -y && \
     apt install r-base r-base-core -y
 
-#13 Installing necessary additional R packages
+# Installing necessary additional R packages
 RUN echo 'install.packages(c("stats","foreign","sp","rgeos","rgdal","raster","maptools","ROCR","fmsb", "Rcpp"), lib="/usr/lib/R/library/", repos = "http://cran.case.edu" )' > ./r.avaflow/install.packages.R && \
     R CMD BATCH ./r.avaflow/install.packages.R
 

@@ -792,7 +792,7 @@ temppath = (
     + "/.tmp/rtemp"
 )  # path to temporary directory
 
-if bingrass == "grass":
+if True:
 
     scriptpath = "$HOME/.grass8/addons/etc/r.avaflow.rcode"  # path to R scripts
     scriptpath2 = "$HOME/.grass8/addons/scripts"  # path to r.avaflow.mult
@@ -2202,7 +2202,7 @@ export reast=%s
 export rtemp=%s
 export GRASS_BATCH_JOB=%s/r.avaflow.mult
 cp %s/*.txt %s/map%s/.tmp/rtemp/
-%s -text %s/map%s
+%s --text %s/map%s --exec $GRASS_BATCH_JOB
 unset GRASS_BATCH_JOB"""
                     % (jid, cellsize, rnorth, rsouth, rwest, reast, temppath, scriptpath2, temppath, locpath, jid, bingrass, locpath, jid), file=out)  # creating batch file
 
