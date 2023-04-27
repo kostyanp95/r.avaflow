@@ -1,0 +1,23 @@
+/* You can add global styles to this file, and also import other style files */
+@import "bootstrap/scss/bootstrap-grid";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+.ant-tabs-content-holder {
+  display: flex;
+}
+
+.ant-tabs-tabpane {
+  display: flex;
+  flex-direction: column;
+}
+
+.cursor {
+  &-pointer {
+    cursor: pointer;
+  }
+
+  &-help {
+    cursor: help;
+  }
+}
