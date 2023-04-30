@@ -138,9 +138,18 @@
                           </nz-form-label>
                           <nz-form-control>
                             <nz-select formControlName="{{ getFormControlName(control) }}"
-                                       [nzPlaceHolder]="control?.placeholder!">
-                              <nz-option nzValue="option1" nzLabel="Option 1"></nz-option>
-                              <nz-option nzValue="option2" nzLabel="Option 2"></nz-option>
+                                       [nzPlaceHolder]="control?.placeholder!"
+                                       [nzDisabled]="isSelectDisabled(getFormControlName(control))"
+                                       nz-tooltip
+                                       [nzTooltipTitle]="showTooltipIfRasterNoLoaded(getFormControlName(control))">
+                              <ng-container *ngFor="let raster of rasters">
+                                <ng-container *ngIf="raster.name === getFormControlName(control)">
+                                  <nz-option *ngFor="let value of raster.values"
+                                             [nzValue]="value"
+                                             [nzLabel]="value">
+                                  </nz-option>
+                                </ng-container>
+                              </ng-container>
                             </nz-select>
                           </nz-form-control>
                         </nz-form-item>
@@ -174,9 +183,17 @@
             </nz-collapse>
 
             <ng-template #extraTpl>
-              <!-- You can use stopPropagation if you don't want the panel to toggle -->
-              <button nz-button nzType="primary" nzShape="round" (click)="$event.stopPropagation()">
-                <span nz-icon nzType="download"></span></button>
+              <nz-upload (click)="$event.stopPropagation()"
+                         nzAction="http://localhost:3000/upload"
+                         [nzShowUploadList]="false"
+                         nzMultiple="true"
+                         [(nzFileList)]="fileList"
+                         (nzChange)="handleChange($event)">
+                <button nz-button nzType="primary">
+                  <span nz-icon nzType="upload"></span>
+                  Upload rasters
+                </button>
+              </nz-upload>
             </ng-template>
           </div>
         </div>
@@ -187,12 +204,9 @@
     <div class="row">
       <div class="col">
         <div class="mt-4 d-flex justify-content-end">
-          <button class="mr-4" nz-button nzType="default" (click)="saveExperimentForm()">
-            Save experiment params
+          <button class="mr-4" nz-button nzType="default" (click)="saveExperimentForm()">Save experiment params
           </button>
-          <button nz-button nzType="primary">
-            Start modeling
-          </button>
+          <button nz-button nzType="primary">Start modeling</button>
         </div>
       </div>
     </div>

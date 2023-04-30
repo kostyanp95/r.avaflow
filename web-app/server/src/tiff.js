@@ -1,7 +1,9 @@
 const gdal = require('gdal');
 
 // Замените 'path/to/your/raster.tif' на путь к вашему TIFF файлу
-const dataset = gdal.open('path/to/your/raster.tif');
+const dataset = gdal.open(
+  'path/to/your/raster.tif',
+);
 const rasterBand = dataset.bands.get(1);
 
 // Размер ячеек
@@ -15,4 +17,6 @@ const rasterHeight = dataset.rasterSize.y;
 const totalCells = rasterWidth * rasterHeight;
 
 console.log(`Размер ячеек: ${cellWidth} x ${cellHeight}`);
-console.log(`Количество ячеек: ${totalCells} (${rasterWidth} x ${rasterHeight})`);
+console.log(
+  `Количество ячеек: ${totalCells} (${rasterWidth} x ${rasterHeight})`,
+);
