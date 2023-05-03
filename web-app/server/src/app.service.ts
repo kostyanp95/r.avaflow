@@ -1,8 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { AppGateway } from './app.gateway';
-import { promises as fsPromises } from 'fs';
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
+import { AppGateway } from './app.gateway';
+import { promisify } from 'util';
+
+const readFile = promisify(fs.readFile);
+
+export interface Project {
+  name: string;
+  experiments: Array<Experiment>;
+}
+
+export interface Experiment {
+  name: string;
+  // TODO: Make interface ExperimentParameter
+  parameters: any;
+}
 
 export interface Rasters {
   name: string;
@@ -12,7 +26,7 @@ export interface Rasters {
 @Injectable()
 export class AppService {
   projectRasters: Array<Rasters>;
-  projectFolder = 'TEST'; // Замените на название папки проекта
+  projectFolder = 'TEST';
   projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
   projectPath = path.join(this.projectsRoot, this.projectFolder);
   dataPath = path.join(this.projectPath, 'DATA');
@@ -24,67 +38,117 @@ export class AppService {
     return 'Hello World!';
   }
 
-  createExperiment(obj: any): string {
-    const imports = [
-      `g.region -d`,
-      `r.in.gdal -o --overwrite input=DATA/${obj.elevation} output=ba_elevation`,
-      obj.hrelease1 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hrelease1} output=ba_hrelease1`,
-      obj.hrelease2 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hrelease2} output=ba_hrelease2`,
-      obj.hrelease3 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hrelease3} output=ba_hrelease3`,
-      obj.hentrmax1 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hentrmax1} output=ba_hentrmax1`,
-      obj.hentrmax2 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hentrmax2} output=ba_hentrmax2`,
-      obj.hentrmax3 &&
-        `r.in.gdal -o --overwrite input=DATA/${obj.hentrmax3} output=ba_hentrmax3`,
-    ]
-      .filter(Boolean)
-      .join('\n');
+  createInitialCommands(experiment: Experiment): string {
+    const {
+      elevation,
+      hrelease1,
+      hrelease2,
+      hrelease3,
+      hentrmax1,
+      hentrmax2,
+      hentrmax3,
+    } = experiment.parameters;
 
-    const density = `${obj.density.densityOfP1},${obj.density.densityOfP2},${obj.density.densityOfP3}`;
-    const phases = [obj.P1, obj.P2, obj.P3].filter(Boolean).join(',');
+    return `g.region -d\n
+g.region -s rast=${elevation}\n
+r.in.gdal -o --overwrite input=DATA/${elevation} output=${elevation.slice(
+      0,
+      -4,
+    )}\nr.in.gdal -o --overwrite input=DATA/${hrelease1} output=${hrelease1.slice(
+      0,
+      -4,
+    )}${
+      hrelease2
+        ? `r.in.gdal -o --overwrite input=DATA/${hrelease2} output=${hrelease2.slice(
+            0,
+            -4,
+          )}`
+        : ''
+    }
+${
+  hrelease3
+    ? `r.in.gdal -o --overwrite input=DATA/${hrelease3} output=${hrelease3.slice(
+        0,
+        -4,
+      )}`
+    : ''
+}
+r.in.gdal -o --overwrite input=DATA/${hentrmax1} output=${hentrmax1.slice(
+      0,
+      -4,
+    )}\n${
+      hentrmax2
+        ? `r.in.gdal -o --overwrite input=DATA/${hentrmax2} output=${hentrmax2.slice(
+            0,
+            -4,
+          )}\n`
+        : ''
+    }${
+      hentrmax3
+        ? `r.in.gdal -o --overwrite input=DATA/${hentrmax3} output=${hentrmax3.slice(
+            0,
+            -4,
+          )}`
+        : ''
+    }\n\n`;
+  }
 
-    const avaflowCommand = [
-      `g.region -s rast=ba_elevation`,
-      ``, // добавьте пустую строку для отступа
-      `r.avaflow -e -v`,
-      `cellsize=${obj.cellize}`,
-      `phases=${phases}`,
-      `elevation=ba_elevation`,
-      obj.hrelease1 && `hrelease1=ba_hrelease1`,
-      obj.hrelease2 && `hrelease2=ba_hrelease2`,
-      obj.hrelease3 && `hrelease3=ba_hrelease3`,
-      obj.hentrmax1 && `hentrmax1=ba_hentrmax1`,
-      obj.hentrmax2 && `hentrmax2=ba_hentrmax2`,
-      obj.hentrmax3 && `hentrmax3=ba_hentrmax3`,
-      `density=${density}`,
-      `time=${obj.tint},${obj.tend}`,
-    ]
-      .filter(Boolean)
-      .join(' ');
+  createExperiment(experiment: Experiment): string {
+    console.log(experiment);
+    const {
+      cellize,
+      elevation,
+      hrelease1,
+      hrelease2,
+      hrelease3,
+      hentrmax1,
+      hentrmax2,
+      hentrmax3,
+      density,
+      friction,
+      viscosity,
+      impactarea,
+      tint,
+      tend,
+      rhentrmax1,
+    } = experiment.parameters;
 
-    const cleanup = 'g.region -d';
+    if (!density) {
+      throw new Error('Density is not defined in the experiment parameters.');
+    }
 
-    // Обновите эту строку, чтобы добавить новую строку перед и после команды avaflow
-    return [imports, '\n', avaflowCommand, '\n', cleanup].join('\n');
+    const { densityOfP1, densityOfP2, densityOfP3 } = density;
+
+    const densityString = `${densityOfP1},${densityOfP2},${densityOfP3}`;
+
+    const rAvaflowCommand = `r.avaflow -e -v cellsize=${cellize} phases=${experiment.parameters.P1},${experiment.parameters.P2},${experiment.parameters.P3} elevation=${elevation} hrelease1=${hrelease1} hrelease2=${hrelease2} hrelease3=${hrelease3} hentrmax1=${hentrmax1} hentrmax2=${hentrmax2} hentrmax3=${hentrmax3} rhentrmax1=${rhentrmax1} density=${densityString} time=${tint},${tend}\n`;
+
+    return rAvaflowCommand;
   }
 
   async createBashScriptFile(
-    obj: any,
+    projectData: Project,
   ): Promise<{ message: string; path: string }> {
-    const uploadDir = './uploads';
+    const initialCommands =
+      projectData.experiments.length > 0
+        ? this.createInitialCommands(projectData.experiments[0])
+        : '';
 
-    // Создать директорию, если она еще не существует
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
-    }
+    // Создайте r.avaflow команды для каждого эксперимента
+    const experimentsScripts = projectData.experiments.map(
+      (experiment, index) => {
+        const experimentScript = this.createExperiment(experiment);
+        return `# ${index + 1} ${experiment.name}\n` + experimentScript;
+      },
+    );
 
-    const script = this.createExperiment(obj);
+    const script =
+      initialCommands + experimentsScripts.join('\n') + '\ng.region -d';
 
-    const projectFolder = 'TEST'; // замените на название папки проекта
+    // Уберите отступы перед первым экспериментом
+    const scriptWithoutInitialIndent = script.replace(/\n\n# 1/, '\n# 1');
+
+    const projectFolder = projectData.name; // используйте имя проекта
     const projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
     const projectPath = path.join(projectsRoot, projectFolder);
 
@@ -92,7 +156,11 @@ export class AppService {
       fs.mkdirSync(projectPath, { recursive: true });
     }
 
-    const scriptPath = path.join(projectPath, 'generated_script.sh');
+    const scriptPath = path.join(projectPath, `${projectData.name}.sh`); // исправлено
+    const jsonPath = path.join(projectPath, `${projectData.name}.json`); // исправлено
+
+    // Сохраните JSON-файл с параметрами объекта
+    fs.writeFileSync(jsonPath, JSON.stringify(projectData, null, 2)); // исправлено
 
     return new Promise((resolve, reject) => {
       fs.writeFile(scriptPath, script, (err) => {
@@ -119,7 +187,17 @@ export class AppService {
     };
   }
 
-  async checkUploadsDirectory(): Promise<void> {
+  async readJsonFile(filePath: string): Promise<any> {
+    try {
+      const data = await readFile(filePath, 'utf-8');
+      const jsonData = JSON.parse(data);
+      return jsonData;
+    } catch (error) {
+      throw new Error(`Error reading JSON file: ${error}`);
+    }
+  }
+
+  async checkProjectDataDirectory(): Promise<void> {
     const files = await fsPromises.readdir(this.uploadsPath, {
       encoding: 'utf8',
     });

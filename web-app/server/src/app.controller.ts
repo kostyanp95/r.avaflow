@@ -5,15 +5,20 @@ import {
   Body,
   UploadedFiles,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
-import { AppService } from './app.service';
+import { AppService, Project } from './app.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { storageOptions } from './storage-options';
+import { AppGateway } from './app.gateway';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {
-    this.appService.checkUploadsDirectory();
+  constructor(
+    private readonly appService: AppService,
+    private readonly appGateway: AppGateway,
+  ) {
+    this.appService.checkProjectDataDirectory();
   }
 
   @Get()
@@ -21,14 +26,26 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('project')
+  async getProjectRasters(
+    @Query('projectName') projectName: string,
+  ): Promise<void> {
+    try {
+      const jsonData: Project = await this.appService.readJsonFile(projectName);
+      this.appGateway.server.emit('projectData', jsonData);
+    } catch (error) {
+      console.error('Error getting project data:', error);
+    }
+  }
+
   @Get('rasters')
-  getProjectRasters(): void {
-    this.appService.checkUploadsDirectory();
+  getProjectRaster(): void {
+    this.appService.checkProjectDataDirectory();
   }
 
   @Post('experiment')
-  createExperiment(@Body() object: any) {
-    return this.appService.createBashScriptFile(object);
+  createExperiment(@Body() projectData: Project) {
+    return this.appService.createBashScriptFile(projectData);
   }
 
   @Post('upload')

@@ -11,7 +11,7 @@
         </button>
       </ng-template>
       <ng-template #experimentHeader>
-        <h4 nz-typography nzEditable [(nzContent)]="experiment" class="m-0" (click)="$event.stopPropagation()"></h4>
+        <h4 nz-typography nzEditable formControlName="{{ toFormControlName(experiment) }}" [(nzContent)]="experiment" class="m-0" (click)="$event.stopPropagation()"></h4>
       </ng-template>
       <nz-collapse-panel [nzHeader]="experimentHeader" [nzActive]="true" [nzExtra]="experimentExtraTpl">
 

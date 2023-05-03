@@ -1,7 +1,11 @@
 .history
 .vscode
 .idea
+.git
 Dockerfile
 Dockerfile.grass-gis
-web-app
+node_modules
+web-app/node_modules
+web-app/.angular
+web-app/server/node_modules
 installers

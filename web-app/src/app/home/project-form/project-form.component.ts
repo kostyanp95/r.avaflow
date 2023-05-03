@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { FormGroup, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, } from '@angular/forms';
+import { Component, Input, OnInit } from '@angular/core';
+import { FormGroup, UntypedFormBuilder, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { BehaviorSubject, Subject, takeUntil, tap } from 'rxjs';
 import { NzFormTooltipIcon } from 'ng-zorro-antd/form';
 import { NzUploadChangeParam, NzUploadFile } from 'ng-zorro-antd/upload';
@@ -9,6 +9,7 @@ import {
   ExperimentFormGroup,
   ExperimentFormItem,
   ExperimentFormRadio,
+  Project,
   RasterFromServer,
   RastersFromServer
 } from '../models/models';
@@ -16,9 +17,13 @@ import {
 @Component({
   selector: 'app-project-form',
   templateUrl: './project-form.component.html',
-  styleUrls: ['./project-form.component.scss'],
+  styleUrls: ['./project-form.component.scss']
 })
 export class ProjectFormComponent implements OnInit {
+
+  @Input()
+  projectName: string;
+
   form!: UntypedFormGroup;
   tooltipIcon: NzFormTooltipIcon = {
     type: 'info-circle',
@@ -62,10 +67,22 @@ export class ProjectFormComponent implements OnInit {
   ngOnInit(): void {
     this.getFormControlsParams();
     this.afterUploadedFilesToApp();
+    this.getProjectData();
+    this.autofillProjectForm();
   }
 
   getProjectRasters(): void {
     this.http.get('http://localhost:3000/rasters').subscribe();
+  }
+
+  getProjectData(): void {
+    this.http.get(`http://localhost:3000/project?projectName=${this.projectName}`).subscribe();
+  }
+
+  autofillProjectForm(): void {
+    this.ws.socket$.on('projectData', (projectData: Project) => {
+      this.form.patchValue(projectData.experiments[0].parameters);
+    });
   }
 
   afterUploadedFilesToApp(): void {
@@ -144,6 +161,8 @@ export class ProjectFormComponent implements OnInit {
           this.rasters = formControls.filter(control => control.type === 'file');
           this.formControls.next(formControls);
           this.form = this.initProjectForm(formControls);
+          const experimentNameFormControl = new UntypedFormControl(this.toFormControlName(this.experiment));
+          this.form.addControl('experiment', experimentNameFormControl);
           this.getProjectRasters();
         })
       )
@@ -171,6 +190,11 @@ export class ProjectFormComponent implements OnInit {
     }
     this.subscribeToRadioGroups(formGroup, radioControls);
     return formGroup;
+  }
+
+  toFormControlName(name: string): string {
+    const validName = name.replace(/[^0-9a-zA-Z_]/g, '');
+    return validName.replace(':', '[[').replace(']', ']]');
   }
 
   subscribeToRadioGroups(formGroup: FormGroup, radioControls: Array<ExperimentFormItem>): void {
@@ -201,7 +225,7 @@ export class ProjectFormComponent implements OnInit {
     const formControlName = this.getFormControlName(group);
     if (this.form.get(formControlName)?.value === selectedValue) {
       this.unsubscribe$.next();
-      this.form.patchValue({[formControlName]: null});
+      this.form.patchValue({ [formControlName]: null });
       this.unsubscribe$ = new Subject<void>();
       this.subscribeToRadioGroups(this.form, this.getAllRadioGroups());
     }
@@ -224,9 +248,18 @@ export class ProjectFormComponent implements OnInit {
   }
 
   saveExperimentForm(): void {
-    const formData = this.form.getRawValue();
-    formData.experiment = this.experiment;
-    console.log(formData);
+    const tempValue = 'TEST';
+
+    const formData: Project = {
+      name: tempValue,
+      experiments: [
+        {
+          name: this.experiment,
+          parameters: this.form.getRawValue()
+        }
+      ]
+    };
+
 
     this.http.post('http://localhost:3000/experiment', formData)
       .pipe(

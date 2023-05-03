@@ -33,3 +33,13 @@ export interface RasterFromServer {
 export interface RastersFromServer {
   filesUploaded: Array<RasterFromServer>;
 }
+
+export interface Project {
+  name: string;
+  experiments: Array<Experiment>;
+}
+
+export interface Experiment {
+  name: string;
+  parameters: any;
+}
