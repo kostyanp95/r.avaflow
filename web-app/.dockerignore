@@ -1,0 +1,11 @@
+.history
+.vscode
+.idea
+.git
+Dockerfile
+node_modules
+.angular
+release
+dist
+server/node_modules
+server/dist

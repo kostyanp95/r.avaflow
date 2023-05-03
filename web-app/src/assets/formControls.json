@@ -246,5 +246,11 @@
     "type": "number",
     "placeholder": "End time of simulation",
     "description": "Real time in seconds after which the simulations ends, multiplied with the factor for time scaling."
+  },
+  {
+    "name": "rhentrmax1",
+    "type": "number",
+    "placeholder": "Ratio of maximum height of P1 entrainment",
+    "description": "Dimensionless number in the range 0-1 indicating the ratio of maximum height of P1 entrainment out of the maximum total height of entrainment given by the parameter hentrmax1. The remaining fraction is assigned to P3, whereas the entrainable height of P2 is set to zero. This parameter is ignored for the mixture or one-phase model, or when hentrmax1 is not given."
   }
 ]

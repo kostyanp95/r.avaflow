@@ -1,0 +1,40 @@
+{
+  "P1": "s",
+  "P2": "fs",
+  "P3": "f",
+  "cellize": 2,
+  "elevation": "ba_elevation1.tif",
+  "hrelease1": "ba_hrelease1.tif",
+  "hrelease2": null,
+  "hrelease3": "ba_hrelease3.tif",
+  "hentrmax1": "ba_hentrmax1.tif",
+  "hentrmax2": null,
+  "hentrmax3": "ba_hentrmax3.tif",
+  "density": {
+    "densityOfP1": "2300",
+    "densityOfP2": "1200",
+    "densityOfP3": "400"
+  },
+  "friction": {
+    "internalFrictionAngleOfP1": null,
+    "basalFrictionAngleOfP1": null,
+    "internalFrictionAngleOfP2": null,
+    "basalFrictionAngleOfP2": null,
+    "internalFrictionAngleOfP3": null,
+    "basalFrictionAngleOfP3": null,
+    "fluidFrictionNumber": null
+  },
+  "viscosity": {
+    "kinematicViscosityOfP1": null,
+    "yieldStrengthOfP1": null,
+    "kinematicViscosityOfP2": null,
+    "yieldStrengthOfP2": null,
+    "kinematicViscosityOfP3": null,
+    "yieldStrengthOfP3": null
+  },
+  "impactarea": null,
+  "tint": 100,
+  "tend": 1000,
+  "rhentrmax1": 1,
+  "experiment": "Experiment: 1"
+}

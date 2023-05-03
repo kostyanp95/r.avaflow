@@ -6,30 +6,37 @@
         <h1>r.avaflow</h1>
       </a>
     </div>
-    <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
+    <ul nz-menu nzSelectable nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-submenu nzOpen nzTitle="Projects" nzIcon="folder">
         <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a>Cascadia Generic Landscape</a>
+          <li nz-menu-item>
+            Cascadia Generic Landscape
           </li>
-          <li nz-menu-item nzMatchRouter>
-            <a>Acheron Rock Avalanche</a>
+          <li nz-menu-item>
+            Acheron Rock Avalanche
           </li>
-          <li nz-menu-item nzMatchRouter>
-            <button nz-button nzType="dashed">Create new project</button>
+          <li nz-menu-item>
+            Bashkara Glacial Lake
+          </li>
+          <li>
+            <div class="d-flex justify-content-center align-items-center" style="padding: 8px 0;">
+              <button nz-button nzType="dashed" (click)="$event.stopImmediatePropagation()">
+                Create new project
+              </button>
+            </div>
           </li>
         </ul>
       </li>
       <li nz-submenu nzOpen nzTitle="Info" nzIcon="question-circle">
         <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a>About r.avaflow</a>
+          <li nz-menu-item>
+            About r.avaflow
           </li>
-          <li nz-menu-item nzMatchRouter>
-            <a>About this app</a>
+          <li nz-menu-item>
+            About this app
           </li>
-          <li nz-menu-item nzMatchRouter>
-            <a>Help</a>
+          <li nz-menu-item>
+            Help
           </li>
         </ul>
       </li>
@@ -44,7 +51,7 @@
         <div class="row w-100">
           <div class="col">
             <h1 class="text-truncate m-0" title="Cascadia Generic Landscape">
-              Cascadia Generic Landscape
+              Bashkara Glacial Lake
             </h1>
           </div>
         </div>
