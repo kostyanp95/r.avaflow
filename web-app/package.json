@@ -1,11 +1,11 @@
 {
-  "name": "angular-electron",
-  "version": "12.0.0",
+  "name": "r.avaflow",
+  "version": "0.0.1",
   "description": "Angular 15 with Electron 22 (Typescript + SASS + Hot Reload)",
   "homepage": "https://github.com/maximegris/angular-electron",
   "author": {
-    "name": "Maxime GRIS",
-    "email": "maxime.gris@gmail.com"
+    "name": "Konstantin Puganov",
+    "email": "kostyanp95@gmail.com"
   },
   "keywords": [
     "angular",
@@ -26,6 +26,7 @@
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
     "ng": "ng",
+    "start:docker": "docker run -p 3000:3000 -p 4200:4200 --name r.avaflow-dev -d r.avaflow:0.0.1",
     "start:dev": "concurrently -k -p \"[{name}]\" -n \"server,client\" -c \"red,blue\" \"npm run --prefix ./server start:dev\" \"npm run ng:serve\"",
     "ng:serve": "ng serve --host 0.0.0.0 -c web -o",
     "start": "npm-run-all -p electron:serve ng:serve",
