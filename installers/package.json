@@ -1,0 +1,28 @@
+{
+  "name": "r.avaflow-installer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:windows": "pkg . --target win --output my-app.exe",
+    "build:mac": "pkg . --target macos --output my-app",
+    "build:linux": "pkg . --target linux --output my-app"
+  },
+  "bin": {
+    "my-app": "./index.js"
+  },
+  "dependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "assets": [
+      "**/*",
+      "!node_modules/**/*"
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.15.11"
+  }
+}
