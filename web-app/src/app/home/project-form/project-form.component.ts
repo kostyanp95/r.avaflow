@@ -13,6 +13,7 @@ import {
   RasterFromServer,
   RastersFromServer
 } from '../models/models';
+import { APP_CONFIG } from '../../../environments/environment';
 
 @Component({
   selector: 'app-project-form',
@@ -20,6 +21,7 @@ import {
   styleUrls: ['./project-form.component.scss']
 })
 export class ProjectFormComponent implements OnInit {
+  apiUrl = APP_CONFIG.apiUrl;
 
   @Input()
   projectName: string;
@@ -72,11 +74,11 @@ export class ProjectFormComponent implements OnInit {
   }
 
   getProjectRasters(): void {
-    this.http.get('http://localhost:3000/rasters').subscribe();
+    this.http.get(`${APP_CONFIG.apiUrl}/rasters`).subscribe();
   }
 
   getProjectData(): void {
-    this.http.get(`http://localhost:3000/project?projectName=${this.projectName}`).subscribe();
+    this.http.get(`${APP_CONFIG.apiUrl}/project?projectName=${this.projectName}`).subscribe();
   }
 
   autofillProjectForm(): void {
@@ -261,7 +263,7 @@ export class ProjectFormComponent implements OnInit {
     };
 
 
-    this.http.post('http://localhost:3000/experiment', formData)
+    this.http.post(`${APP_CONFIG.apiUrl}/experiment`, formData)
       .pipe(
         tap((data) => console.log(data))
       )

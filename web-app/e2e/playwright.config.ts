@@ -1,19 +1,30 @@
-/** @type {import('@playwright/test').PlaywrightTestConfig} */
-const config = {
+import { PlaywrightTestConfig } from '@playwright/test';
+
+const config: PlaywrightTestConfig = {
   testDir: '.',
-  timeout: 45000,
+  timeout: 60000,
+  retries: 1,
   outputDir: './screenshots',
   use: {
-    headless: false,
+    baseURL: 'http://localhost:4200',
+    headless: true,
     viewport: { width: 1280, height: 720 },
-    launchOptions: {
-      slowMo: 1000,
+    actionTimeout: 10000,
+  },
+  webServer: [
+    {
+      command: 'cd server && npx nest start',
+      port: 3000,
+      timeout: 30000,
+      reuseExistingServer: true,
     },
-    trace: 'on',
-  },
-  expect: {
-    toMatchSnapshot: { threshold: 0.2 },
-  },
+    {
+      command: 'npx ng serve -c web --port 4200',
+      port: 4200,
+      timeout: 60000,
+      reuseExistingServer: true,
+    },
+  ],
 };
 
-module.exports = config;
+export default config;

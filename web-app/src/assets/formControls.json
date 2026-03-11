@@ -60,7 +60,7 @@
     "description": "This parameter is only considered for the multi-phase model.\nx = mixture (for the Voellmy-type model only)\ns = solid\nfs = fine-solid\nf = fluid"
   },
   {
-    "name": "cellize",
+    "name": "cellsize",
     "type": "number",
     "placeholder": "Cell size for simulation",
     "description": "Cell size in metres to be used for the model (only used for r.avaflow3G). If the cell size is not given, or if r.avaflow3W is used, the cell size is taken from the input elevation raster map (option elevation)."

@@ -9,39 +9,58 @@
     <ul nz-menu nzSelectable nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-submenu nzOpen nzTitle="Projects" nzIcon="folder">
         <ul>
-          <li nz-menu-item>
-            Cascadia Generic Landscape
+          <li *ngFor="let project of projects"
+              nz-menu-item
+              [nzSelected]="project.name === activeProjectName"
+              [nzDisabled]="!project.hasJson"
+              (click)="project.hasJson && openProject(project)"
+              class="project-item">
+            <span class="project-name" [title]="project.name">{{ project.name }}</span>
+            <span *ngIf="!project.hasJson" nz-icon nzType="warning" nzTheme="outline" style="color: #faad14; margin-left: 4px;" nz-tooltip nzTooltipTitle="No JSON config — edit not available"></span>
+            <span class="project-actions">
+              <span *ngIf="project.hasJson" nz-icon nzType="edit" nzTheme="outline"
+                    nz-tooltip nzTooltipTitle="Edit"
+                    (click)="openProject(project); $event.stopPropagation()">
+              </span>
+              <span *ngIf="project.hasScript" nz-icon nzType="play-circle" nzTheme="outline"
+                    nz-tooltip nzTooltipTitle="Run"
+                    (click)="runProject(project.name, $event)">
+              </span>
+              <span nz-icon nzType="delete" nzTheme="outline"
+                    nz-tooltip nzTooltipTitle="Delete"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Delete '{{ project.name }}'?"
+                    nzPopconfirmPlacement="right"
+                    (nzOnConfirm)="deleteProject(project.name, $event)"
+                    (click)="$event.stopPropagation()">
+              </span>
+            </span>
           </li>
-          <li nz-menu-item>
-            Acheron Rock Avalanche
+
+          <li *ngIf="projects.length === 0" nz-menu-item nzDisabled>
+            <span nz-icon nzType="inbox"></span>&nbsp;No projects yet
           </li>
-          <li nz-menu-item>
-            Bashkara Glacial Lake
-          </li>
+
           <li>
             <div class="d-flex justify-content-center align-items-center" style="padding: 8px 0;">
-              <button nz-button nzType="dashed" (click)="$event.stopImmediatePropagation()">
-                Create new project
+              <button nz-button nzType="dashed" (click)="newProject(); $event.stopPropagation()">
+                <span nz-icon nzType="plus"></span> New project
               </button>
             </div>
           </li>
         </ul>
       </li>
+
       <li nz-submenu nzOpen nzTitle="Info" nzIcon="question-circle">
         <ul>
-          <li nz-menu-item>
-            About r.avaflow
-          </li>
-          <li nz-menu-item>
-            About this app
-          </li>
-          <li nz-menu-item>
-            Help
-          </li>
+          <li nz-menu-item>About r.avaflow</li>
+          <li nz-menu-item>About this app</li>
+          <li nz-menu-item>Help</li>
         </ul>
       </li>
     </ul>
   </nz-sider>
+
   <nz-layout>
     <nz-header>
       <div class="app-header d-flex">
@@ -50,33 +69,35 @@
         </span>
         <div class="row w-100">
           <div class="col">
-            <h1 class="text-truncate m-0" title="Cascadia Generic Landscape">
-              Bashkara Glacial Lake
+            <h1 class="text-truncate m-0">
+              {{ activeProjectName || 'New project' }}
             </h1>
           </div>
         </div>
       </div>
     </nz-header>
+
     <nz-content>
       <div class="inner-content overflow-auto d-flex flex-column">
-
-        <nz-tabset class="flex-grow-1 overflow-auto">
-          <nz-tab nzTitle="Experiment parameters">
-            <app-project-form class="d-flex flex-grow-1"></app-project-form>
+        <nz-tabset class="flex-grow-1 overflow-auto" [(nzSelectedIndex)]="selectedTabIndex">
+          <nz-tab nzTitle="Parameters">
+            <app-simulation-wizard
+              (simulationStarted)="onSimulationStarted()"
+              (projectSaved)="onProjectSaved($event)">
+            </app-simulation-wizard>
           </nz-tab>
           <nz-tab nzTitle="Modeling">
+            <app-simulation-status [projectName]="activeProjectName"></app-simulation-status>
           </nz-tab>
           <nz-tab nzTitle="Results">
+            <app-simulation-results [projectName]="activeProjectName"></app-simulation-results>
           </nz-tab>
         </nz-tabset>
-
       </div>
     </nz-content>
 
-    <nz-footer class="p-2">Puganov K., 2023. r.avaflow WEB APP - UI for work with r.avaflow & Mergili, M.,
-      Pudasaini, S.P., 2014-2023. r.avaflow - The mass flow simulation tool. <a href="https://www.avaflow.org"
-                                                                                target="_blank">https://www.avaflow.org</a>
+    <nz-footer class="p-2">Puganov K., 2023. r.avaflow WEB APP — UI for work with r.avaflow &amp; Mergili, M.,
+      Pudasaini, S.P., 2014–2023. r.avaflow - The mass flow simulation tool. <a href="https://www.avaflow.org" target="_blank">https://www.avaflow.org</a>
     </nz-footer>
-
   </nz-layout>
 </nz-layout>

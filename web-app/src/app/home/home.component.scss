@@ -106,3 +106,39 @@ button {
 nz-tabset {
   padding: 0 24px 0 0;
 }
+
+// Project items in sidebar
+.project-item {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+
+  .project-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .project-actions {
+    display: none;
+    gap: 8px;
+    margin-left: 8px;
+    flex-shrink: 0;
+
+    span[nz-icon] {
+      font-size: 13px;
+      opacity: 0.7;
+      cursor: pointer;
+      transition: opacity 0.2s;
+
+      &:hover { opacity: 1; }
+      &[nzType="delete"]:hover { color: #ff4d4f; }
+      &[nzType="edit"]:hover { color: #1890ff; }
+    }
+  }
+
+  &:hover .project-actions {
+    display: flex;
+  }
+}

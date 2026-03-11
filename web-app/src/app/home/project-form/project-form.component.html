@@ -184,7 +184,7 @@
 
             <ng-template #extraTpl>
               <nz-upload (click)="$event.stopPropagation()"
-                         nzAction="http://localhost:3000/upload"
+                         [nzAction]="apiUrl + '/upload'"
                          [nzShowUploadList]="false"
                          nzMultiple="true"
                          [(nzFileList)]="fileList"

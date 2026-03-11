@@ -1,0 +1,32 @@
+<ng-container *ngIf="!projectName">
+  <p>No project selected</p>
+</ng-container>
+
+<ng-container *ngIf="projectName">
+  <div *ngIf="exitStatus" class="exit-status">
+    <nz-badge [nzStatus]="exitStatus === 'Success' ? 'success' : 'error'" [nzText]="'Exit: ' + exitStatus"></nz-badge>
+  </div>
+
+  <ng-container *ngIf="files.length === 0 && !loading">
+    <p>No results yet</p>
+  </ng-container>
+
+  <nz-table *ngIf="files.length > 0" [nzData]="files" [nzShowPagination]="false" nzSize="small" nzBordered [nzLoading]="loading">
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let file of files">
+        <td>{{ file.filename }}</td>
+        <td>
+          <nz-tag [nzColor]="file.type === 'raster' ? 'green' : file.type === 'csv' ? 'blue' : file.type === 'script' ? 'orange' : 'default'">
+            {{ file.type }}
+          </nz-tag>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</ng-container>

@@ -1,13 +1,15 @@
 import {
   Controller,
+  Delete,
   Get,
   Post,
   Body,
+  Param,
   UploadedFiles,
   UseInterceptors,
   Query,
 } from '@nestjs/common';
-import { AppService, Project } from './app.service';
+import { AppService, Project, ProjectSummary } from './app.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { storageOptions } from './storage-options';
 import { AppGateway } from './app.gateway';
@@ -27,15 +29,28 @@ export class AppController {
   }
 
   @Get('project')
-  async getProjectRasters(
+  async getProject(
     @Query('projectName') projectName: string,
-  ): Promise<void> {
+  ): Promise<Project | null> {
     try {
-      const jsonData: Project = await this.appService.readJsonFile(projectName);
+      const jsonData: Project = await this.appService.getProjectByName(projectName);
       this.appGateway.server.emit('projectData', jsonData);
+      return jsonData;
     } catch (error) {
       console.error('Error getting project data:', error);
+      return null;
     }
+  }
+
+  @Get('projects')
+  listProjects(): Promise<ProjectSummary[]> {
+    return this.appService.listProjects();
+  }
+
+  @Delete('project/:name')
+  async deleteProject(@Param('name') name: string): Promise<{ message: string }> {
+    await this.appService.deleteProject(name);
+    return { message: `Project "${name}" deleted` };
   }
 
   @Get('rasters')
@@ -46,6 +61,21 @@ export class AppController {
   @Post('experiment')
   createExperiment(@Body() projectData: Project) {
     return this.appService.createBashScriptFile(projectData);
+  }
+
+  @Post('run')
+  runSimulation(@Body() body: { projectName: string }) {
+    return this.appService.runSimulation(body.projectName);
+  }
+
+  @Post('run/stop')
+  stopSimulation() {
+    return this.appService.stopSimulation();
+  }
+
+  @Get('project/:name/files')
+  listProjectFiles(@Param('name') name: string) {
+    return this.appService.listProjectFiles(name);
   }
 
   @Post('upload')
