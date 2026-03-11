@@ -1,0 +1,17 @@
+<div class="status-header">
+  <nz-badge [nzStatus]="badgeStatus" [nzText]="statusText"></nz-badge>
+</div>
+
+<nz-progress *ngIf="progress !== null && status === 'running'"
+  [nzPercent]="progress"
+  nzStatus="active">
+</nz-progress>
+
+<div class="log-container" #logContainer>
+  <pre class="log-output"><ng-container *ngFor="let line of logLines">{{ line }}
+</ng-container></pre>
+</div>
+
+<button nz-button nzType="primary" nzSize="small" (click)="runSimulation()" [disabled]="isRunning || !projectName">Run</button>
+<button nz-button nzType="default" nzSize="small" (click)="clearLog()">Clear</button>
+<button nz-button nzDanger nzType="primary" nzSize="small" (click)="stopSimulation()" [disabled]="status !== 'running'">Stop</button>

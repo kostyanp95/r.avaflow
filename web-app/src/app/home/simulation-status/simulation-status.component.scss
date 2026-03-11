@@ -1,0 +1,25 @@
+.status-header {
+  margin-bottom: 8px;
+}
+
+.log-container {
+  margin-top: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.log-output {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+button {
+  margin-top: 12px;
+}

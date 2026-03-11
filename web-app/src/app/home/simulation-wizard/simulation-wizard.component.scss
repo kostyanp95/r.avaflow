@@ -1,0 +1,51 @@
+.wizard-container {
+  padding: 16px 24px 16px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.steps-content {
+  flex: 1;
+  margin-top: 24px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.steps-action {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.upload-area {
+  margin-bottom: 16px;
+}
+
+.script-preview {
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 16px;
+  font-size: 13px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+h4 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.field-info {
+  margin-left: 4px;
+  color: #aaa;
+  cursor: help;
+  font-size: 13px;
+  vertical-align: middle;
+
+  &:hover {
+    color: #1890ff;
+  }
+}

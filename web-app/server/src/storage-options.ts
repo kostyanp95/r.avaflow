@@ -2,20 +2,28 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { diskStorage } from 'multer';
 
-const projectFolder = 'TEST';
 const projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
-const projectPath = path.join(projectsRoot, projectFolder);
-const dataPath = path.join(projectPath, 'DATA');
+const defaultUploadsPath = path.join(projectsRoot, 'uploads');
 
-if (!fs.existsSync(dataPath)) {
-  fs.mkdirSync(dataPath, { recursive: true });
+if (!fs.existsSync(defaultUploadsPath)) {
+  fs.mkdirSync(defaultUploadsPath, { recursive: true });
 }
 
 export const storageOptions = diskStorage({
-  destination: dataPath,
+  destination: (req, file, cb) => {
+    const projectName = req.body?.projectName;
+    let dest: string;
+    if (projectName) {
+      dest = path.join(projectsRoot, projectName, 'DATA');
+    } else {
+      dest = defaultUploadsPath;
+    }
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    cb(null, dest);
+  },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   },
 });
-
-// Оставшаяся часть вашего кода
