@@ -1,0 +1,123 @@
+# =============================================================================
+# r.avaflow 40G — Production Docker Image (monolith, OpenMP CPU)
+# Build context: D:/r.avaflow.40G/ (root, needs both r.avaflow/ and r.avaflow.40G/)
+# =============================================================================
+
+# Stage 1: Frontend build (Angular web-production)
+FROM node:20-slim AS frontend-build
+WORKDIR /build
+COPY r.avaflow/web-app/package*.json ./
+RUN npm ci --ignore-scripts
+COPY r.avaflow/web-app/ ./
+RUN npx ng build -c web-production
+
+# Stage 2: Backend build (NestJS)
+FROM node:20-slim AS backend-build
+WORKDIR /build
+COPY r.avaflow/web-app/server/package*.json ./
+RUN npm ci
+COPY r.avaflow/web-app/server/ ./
+RUN npm run build
+
+# Stage 3: Runtime
+FROM ubuntu:22.04 AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+# Yandex mirror (reliable from Russia)
+RUN sed -i \
+    's|http://archive.ubuntu.com|http://mirror.yandex.ru|g; s|http://security.ubuntu.com|http://mirror.yandex.ru|g' \
+    /etc/apt/sources.list
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      locales curl gnupg ca-certificates && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LC_ALL=en_US.UTF-8
+
+# Use bash by default
+RUN ln -fs /bin/bash /bin/sh
+
+# Python 3
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3 python3-pip python3-setuptools python3-wheel python3-pil && \
+    echo "alias python=python3" >> ~/.bash_aliases && \
+    rm -rf /var/lib/apt/lists/*
+
+# ubuntugis PPA
+RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B827C12C2D425E227EDCA75089EBE08314DF160" | \
+      gpg --dearmor -o /usr/share/keyrings/ubuntugis.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/ubuntugis.gpg] https://ppa.launchpadcontent.net/ubuntugis/ubuntugis-unstable/ubuntu jammy main" \
+      > /etc/apt/sources.list.d/ubuntugis-unstable.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      libgeos-dev libproj-dev proj-data proj-bin \
+      libgdal-dev python3-gdal gdal-bin && \
+    rm -rf /var/lib/apt/lists/*
+
+# GRASS GIS + OpenMP build tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      grass-core grass-dev git make gcc g++ libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# R statistical software
+RUN curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+      gpg --dearmor -o /usr/share/keyrings/r-project.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" \
+      > /etc/apt/sources.list.d/r-project.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends r-base r-base-core && \
+    rm -rf /var/lib/apt/lists/*
+
+# R packages (40G — no deprecated rgdal/rgeos/maptools)
+RUN R -q -e 'install.packages(c("stats","codetools","Rcpp","terra","lattice","sp","raster","ROCR"), lib="/usr/lib/R/library/", repos="https://cloud.r-project.org")'
+
+# Build r.avaflow.40G (system module via GRASS make, with OpenMP)
+WORKDIR /build
+COPY r.avaflow.40G/ ./r.avaflow.40G/
+RUN cd /build/r.avaflow.40G && \
+    make MODULE_TOPDIR=/usr/lib/grass84 \
+         EXTRA_CFLAGS="-fopenmp -march=native -O3 -fno-math-errno -funroll-loops" \
+         -j$(nproc)
+
+# Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# tini as PID 1
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# NestJS backend
+WORKDIR /app
+COPY --from=backend-build /build/dist ./dist
+COPY --from=backend-build /build/node_modules ./node_modules
+COPY --from=backend-build /build/package.json ./
+
+# Angular static files
+COPY --from=frontend-build /build/dist ./static
+
+# Projects directory
+RUN mkdir -p /data/projects/uploads
+
+ENV NODE_ENV=production
+ENV AVAFLOW_PROJECTS_PATH=/data/projects
+ENV AVAFLOW_MODULE=r.avaflow.40G
+ENV OMP_NUM_THREADS=8
+ENV PORT=3000
+
+EXPOSE 3000
+VOLUME /data/projects
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+ENTRYPOINT ["tini", "--"]
+CMD ["node", "dist/main.js"]

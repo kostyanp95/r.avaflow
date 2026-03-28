@@ -1,0 +1,120 @@
+# =============================================================================
+# r.avaflow Classic — Production Docker Image (monolith)
+# Build context: D:/r.avaflow.40G/r.avaflow/
+# =============================================================================
+
+# Stage 1: Frontend build (Angular web-production)
+FROM node:20-slim AS frontend-build
+WORKDIR /build
+COPY web-app/package*.json ./
+RUN npm ci --ignore-scripts
+COPY web-app/ ./
+RUN npx ng build -c web-production
+
+# Stage 2: Backend build (NestJS)
+FROM node:20-slim AS backend-build
+WORKDIR /build
+COPY web-app/server/package*.json ./
+RUN npm ci
+COPY web-app/server/ ./
+RUN npm run build
+
+# Stage 3: Runtime
+FROM ubuntu:22.04 AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+# Yandex mirror (reliable from Russia)
+RUN sed -i \
+    's|http://archive.ubuntu.com|http://mirror.yandex.ru|g; s|http://security.ubuntu.com|http://mirror.yandex.ru|g' \
+    /etc/apt/sources.list
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      locales curl gnupg ca-certificates && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LC_ALL=en_US.UTF-8
+
+# Use bash by default
+RUN ln -fs /bin/bash /bin/sh
+
+# Python 3
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3 python3-pip python3-setuptools python3-wheel python3-pil && \
+    echo "alias python=python3" >> ~/.bash_aliases && \
+    rm -rf /var/lib/apt/lists/*
+
+# ubuntugis PPA
+RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B827C12C2D425E227EDCA75089EBE08314DF160" | \
+      gpg --dearmor -o /usr/share/keyrings/ubuntugis.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/ubuntugis.gpg] https://ppa.launchpadcontent.net/ubuntugis/ubuntugis-unstable/ubuntu jammy main" \
+      > /etc/apt/sources.list.d/ubuntugis-unstable.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      libgeos-dev libproj-dev proj-data proj-bin \
+      libgdal-dev python3-gdal gdal-bin && \
+    rm -rf /var/lib/apt/lists/*
+
+# GRASS GIS
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      grass-core grass-dev git make gcc g++ && \
+    rm -rf /var/lib/apt/lists/*
+
+# R statistical software
+RUN curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+      gpg --dearmor -o /usr/share/keyrings/r-project.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" \
+      > /etc/apt/sources.list.d/r-project.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends r-base r-base-core && \
+    rm -rf /var/lib/apt/lists/*
+
+# R packages (classic — no deprecated rgdal/rgeos/maptools)
+RUN R -q -e 'install.packages(c("stats","foreign","sp","sf","terra","raster","ROCR","fmsb","Rcpp"), lib="/usr/lib/R/library/", repos="https://cloud.r-project.org")'
+
+# Install r.avaflow addon in GRASS GIS
+WORKDIR /build
+COPY avaflow/ ./avaflow/
+RUN grass -c XY ./temp_grassdb/temp_location/ --exec g.extension extension=r.avaflow url=/build/avaflow/ && \
+    rm -rf ./temp_grassdb
+
+# Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# tini as PID 1
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# NestJS backend
+WORKDIR /app
+COPY --from=backend-build /build/dist ./dist
+COPY --from=backend-build /build/node_modules ./node_modules
+COPY --from=backend-build /build/package.json ./
+
+# Angular static files
+COPY --from=frontend-build /build/dist ./static
+
+# Projects directory
+RUN mkdir -p /data/projects/uploads
+
+ENV NODE_ENV=production
+ENV AVAFLOW_PROJECTS_PATH=/data/projects
+ENV AVAFLOW_MODULE=r.avaflow
+ENV PORT=3000
+
+EXPOSE 3000
+VOLUME /data/projects
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+ENTRYPOINT ["tini", "--"]
+CMD ["node", "dist/main.js"]
