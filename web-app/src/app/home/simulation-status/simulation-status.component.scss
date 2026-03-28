@@ -1,25 +1,300 @@
+// ── SimulationStatus: modern modeling tab with terminal ──
+
+:host {
+  display: block;
+  font-family: var(--font-family);
+}
+
+.status-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-xs);
+}
+
+// ── Status header ──
+
 .status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all var(--transition-normal) ease;
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &.status-idle {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+
+    .status-dot {
+      background: var(--text-muted);
+    }
+  }
+
+  &.status-running {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+
+    .status-dot {
+      background: var(--accent-primary);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+  }
+
+  &.status-done {
+    background: var(--accent-success-light);
+    color: var(--accent-success);
+
+    .status-dot {
+      background: var(--accent-success);
+    }
+  }
+
+  &.status-error {
+    background: var(--accent-danger-light);
+    color: var(--accent-danger);
+
+    .status-dot {
+      background: var(--accent-danger);
+    }
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+// ── Progress bar ──
+
+.progress-section {
+  margin-bottom: 16px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
+.progress-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.progress-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-hover));
+  transition: width var(--transition-normal) ease;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.15) 50%,
+      transparent 100%
+    );
+    animation: progress-shimmer 2s ease-in-out infinite;
+  }
+}
+
+@keyframes progress-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+// ── Terminal / Log area ──
+
+.terminal-section {
+  margin-bottom: 16px;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .terminal-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .terminal-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-success);
+
+    &.inactive {
+      background: var(--text-muted);
+    }
+  }
+}
+
 .log-container {
-  margin-top: 12px;
   max-height: 500px;
   overflow-y: auto;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-terminal);
+
+  // Custom scrollbar (dark theme for terminal)
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: var(--bg-terminal);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
 }
 
 .log-output {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 12px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
+  background: var(--bg-terminal);
+  color: var(--text-terminal);
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
+  min-height: 200px;
 }
 
-button {
-  margin-top: 12px;
+.log-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-style: italic;
+}
+
+// ── Button bar ──
+
+.button-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  border: 1px solid transparent;
+  line-height: 1.5;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.btn-run {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-primary-hover);
+    border-color: var(--accent-primary-hover);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.btn-stop {
+  background: var(--accent-danger);
+  color: var(--text-inverse);
+  border-color: var(--accent-danger);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-danger);
+    border-color: var(--accent-danger);
+    box-shadow: var(--shadow-sm);
+    opacity: 0.9;
+  }
+}
+
+.btn-clear {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-color-strong);
+    background: var(--bg-secondary);
+  }
 }

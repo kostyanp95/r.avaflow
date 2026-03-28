@@ -1,17 +1,61 @@
-<div class="status-header">
-  <nz-badge [nzStatus]="badgeStatus" [nzText]="statusText"></nz-badge>
-</div>
+<div class="status-container">
+  <!-- Status header with pill badge -->
+  <div class="status-header">
+    <span class="status-badge"
+          [class.status-idle]="status === 'idle'"
+          [class.status-running]="status === 'running'"
+          [class.status-done]="status === 'done'"
+          [class.status-error]="status === 'error'">
+      <span class="status-dot"></span>
+      {{ statusTranslateKey | translate }}
+    </span>
+  </div>
 
-<nz-progress *ngIf="progress !== null && status === 'running'"
-  [nzPercent]="progress"
-  nzStatus="active">
-</nz-progress>
+  <!-- Progress bar -->
+  <div class="progress-section" *ngIf="progress !== null && status === 'running'">
+    <div class="progress-header">
+      <span class="progress-label">{{ 'modeling.simulationProgress' | translate }}</span>
+      <span class="progress-value">{{ progress }}%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="progress"></div>
+    </div>
+  </div>
 
-<div class="log-container" #logContainer>
-  <pre class="log-output"><ng-container *ngFor="let line of logLines">{{ line }}
+  <!-- Terminal log -->
+  <div class="terminal-section">
+    <div class="terminal-header">
+      <span class="terminal-dot" [class.inactive]="status !== 'running'"></span>
+      <span class="terminal-title">{{ 'modeling.output' | translate }}</span>
+    </div>
+    <div class="log-container" #logContainer>
+      <pre class="log-output" *ngIf="logLines.length > 0"><ng-container *ngFor="let line of logLines">{{ line }}
 </ng-container></pre>
-</div>
+      <div class="log-empty" *ngIf="logLines.length === 0">
+        {{ 'modeling.waitingForOutput' | translate }}
+      </div>
+    </div>
+  </div>
 
-<button nz-button nzType="primary" nzSize="small" (click)="runSimulation()" [disabled]="isRunning || !projectName">Run</button>
-<button nz-button nzType="default" nzSize="small" (click)="clearLog()">Clear</button>
-<button nz-button nzDanger nzType="primary" nzSize="small" (click)="stopSimulation()" [disabled]="status !== 'running'">Stop</button>
+  <!-- Button bar -->
+  <div class="button-bar">
+    <button class="btn btn-run"
+            (click)="runSimulation()"
+            [disabled]="isRunning || !projectName">
+      <span class="btn-icon" nz-icon nzType="caret-right" nzTheme="fill"></span>
+      {{ 'modeling.run' | translate }}
+    </button>
+    <button class="btn btn-stop"
+            *ngIf="status === 'running'"
+            (click)="stopSimulation()">
+      <span class="btn-icon" nz-icon nzType="pause-circle" nzTheme="outline"></span>
+      {{ 'modeling.stop' | translate }}
+    </button>
+    <button class="btn btn-clear"
+            (click)="clearLog()"
+            [disabled]="logLines.length === 0">
+      <span class="btn-icon" nz-icon nzType="delete" nzTheme="outline"></span>
+      {{ 'modeling.clear' | translate }}
+    </button>
+  </div>
+</div>

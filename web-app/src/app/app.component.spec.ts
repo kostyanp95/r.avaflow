@@ -4,10 +4,20 @@ import { AppComponent } from './app.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { ElectronService } from './core/services';
 import { WebSocketService } from './web-socket.service';
+import { ThemeService } from './core/services/theme.service';
+import { Subject } from 'rxjs';
 
 class MockWebSocketService {
   socket$ = { on: jasmine.createSpy('on'), off: jasmine.createSpy('off') };
   webSocketConnect() { return { subscribe: () => {} }; }
+}
+
+class MockThemeService {
+  isDark = false;
+  currentTheme = 'light' as const;
+  theme$ = new Subject();
+  toggleTheme() {}
+  setTheme(_theme: string) {}
 }
 
 describe('AppComponent', () => {
@@ -16,7 +26,8 @@ describe('AppComponent', () => {
       declarations: [AppComponent],
       providers: [
         ElectronService,
-        { provide: WebSocketService, useClass: MockWebSocketService }
+        { provide: WebSocketService, useClass: MockWebSocketService },
+        { provide: ThemeService, useClass: MockThemeService }
       ],
       imports: [RouterTestingModule, TranslateModule.forRoot()]
     }).compileComponents();

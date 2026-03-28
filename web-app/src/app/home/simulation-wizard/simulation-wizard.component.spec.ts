@@ -18,6 +18,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzMessageModule } from 'ng-zorro-antd/message';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { SimulationWizardComponent } from './simulation-wizard.component';
 import { WebSocketService } from '../../web-socket.service';
@@ -53,7 +54,8 @@ describe('SimulationWizardComponent', () => {
         NzTableModule,
         NzToolTipModule,
         NzIconModule,
-        NzMessageModule
+        NzMessageModule,
+        TranslateModule.forRoot()
       ],
       providers: [
         { provide: WebSocketService, useClass: MockWebSocketService }

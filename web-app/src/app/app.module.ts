@@ -17,6 +17,11 @@ import { DetailModule } from './detail/detail.module';
 import { AppComponent } from './app.component';
 import { WebSocketService } from './web-socket.service';
 import { en_US, NZ_I18N } from "ng-zorro-antd/i18n";
+import { NZ_ICONS } from 'ng-zorro-antd/icon';
+import { IconDefinition } from '@ant-design/icons-angular';
+import { SunOutline, MoonOutline } from './core/custom-icons';
+
+const customIcons: IconDefinition[] = [SunOutline, MoonOutline];
 
 // AoT requires an exported function for factories
 const httpLoaderFactory = (http: HttpClient): TranslateHttpLoader => new TranslateHttpLoader(http, './assets/i18n/', '.json');
@@ -44,6 +49,10 @@ const httpLoaderFactory = (http: HttpClient): TranslateHttpLoader => new Transla
     {
       provide: NZ_I18N,
       useValue: en_US
+    },
+    {
+      provide: NZ_ICONS,
+      useValue: customIcons
     },
     WebSocketService],
   bootstrap: [AppComponent]

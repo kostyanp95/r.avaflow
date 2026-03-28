@@ -8,6 +8,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzMessageModule } from 'ng-zorro-antd/message';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { SimulationStatusComponent } from './simulation-status.component';
 import { WebSocketService } from '../../web-socket.service';
@@ -44,7 +45,8 @@ describe('SimulationStatusComponent', () => {
         NzButtonModule,
         NzProgressModule,
         NzIconModule,
-        NzMessageModule
+        NzMessageModule,
+        TranslateModule.forRoot()
       ],
       providers: [
         { provide: WebSocketService, useValue: mockWs }
@@ -58,6 +60,8 @@ describe('SimulationStatusComponent', () => {
   }));
 
   afterEach(() => {
+    // Flush ng-zorro icon SVG requests that are irrelevant to unit tests
+    httpMock.match(req => req.url.endsWith('.svg')).forEach(req => req.flush('<svg></svg>'));
     httpMock.verify();
   });
 
@@ -219,8 +223,7 @@ describe('SimulationStatusComponent', () => {
     it('should be disabled when projectName is empty', () => {
       component.projectName = '';
       fixture.detectChanges();
-      const buttons = fixture.nativeElement.querySelectorAll('button');
-      const runButton = Array.from(buttons).find((b: any) => b.textContent.trim() === 'Run') as HTMLButtonElement;
+      const runButton = fixture.nativeElement.querySelector('.btn-run') as HTMLButtonElement;
       expect(runButton).toBeTruthy();
       expect(runButton.disabled).toBeTrue();
     });
@@ -229,8 +232,7 @@ describe('SimulationStatusComponent', () => {
       component.projectName = 'testProject';
       component.status = 'running';
       fixture.detectChanges();
-      const buttons = fixture.nativeElement.querySelectorAll('button');
-      const runButton = Array.from(buttons).find((b: any) => b.textContent.trim() === 'Run') as HTMLButtonElement;
+      const runButton = fixture.nativeElement.querySelector('.btn-run') as HTMLButtonElement;
       expect(runButton.disabled).toBeTrue();
     });
 
@@ -238,8 +240,7 @@ describe('SimulationStatusComponent', () => {
       component.projectName = 'testProject';
       component.status = 'idle';
       fixture.detectChanges();
-      const buttons = fixture.nativeElement.querySelectorAll('button');
-      const runButton = Array.from(buttons).find((b: any) => b.textContent.trim() === 'Run') as HTMLButtonElement;
+      const runButton = fixture.nativeElement.querySelector('.btn-run') as HTMLButtonElement;
       expect(runButton.disabled).toBeFalse();
     });
   });

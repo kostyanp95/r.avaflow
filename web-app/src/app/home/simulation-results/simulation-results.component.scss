@@ -1,9 +1,256 @@
-.exit-status {
-  margin-bottom: 12px;
+// ── SimulationResults: modern results tab ──
+
+:host {
+  display: block;
+  font-family: var(--font-family);
 }
 
-p {
-  color: rgba(0, 0, 0, 0.45);
-  text-align: center;
+.results-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
   padding: 24px;
+  box-shadow: var(--shadow-xs);
+}
+
+// ── Exit status badge ──
+
+.exit-status-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.exit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  .exit-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+  }
+
+  &.exit-success {
+    background: var(--accent-success-light);
+    color: var(--accent-success);
+  }
+
+  &.exit-error {
+    background: var(--accent-danger-light);
+    color: var(--accent-danger);
+  }
+}
+
+// ── Section header ──
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .file-count {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+}
+
+// ── File table ──
+
+.files-table-wrap {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+
+  ::ng-deep {
+    .ant-table {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    .ant-table-thead > tr > th {
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      border-color: var(--border-color) !important;
+      padding: 10px 16px !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-color: var(--border-color) !important;
+      padding: 10px 16px !important;
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+      font-size: 14px !important;
+      transition: background var(--transition-fast) ease !important;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: var(--bg-secondary) !important;
+    }
+
+    // Remove default borders from the container
+    .ant-table-bordered .ant-table-container {
+      border: none !important;
+    }
+
+    .ant-table-cell {
+      border-color: var(--border-color) !important;
+    }
+
+    // Loading spinner
+    .ant-spin-dot-item {
+      background: var(--accent-primary) !important;
+    }
+  }
+}
+
+.filename-cell {
+  font-family: var(--font-mono);
+  font-size: 13px !important;
+  color: var(--text-primary);
+}
+
+// ── File type tags ──
+
+.file-type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+
+  &.type-raster {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+  }
+
+  &.type-csv {
+    background: var(--accent-success-light);
+    color: var(--accent-success);
+  }
+
+  &.type-image {
+    // Purple tint using accent-info as base
+    background: var(--accent-primary-light);
+    color: var(--accent-info);
+  }
+
+  &.type-script {
+    background: var(--accent-warning-light);
+    color: var(--accent-warning);
+  }
+
+  &.type-json {
+    background: var(--accent-primary-light);
+    color: var(--accent-info);
+  }
+
+  &.type-text {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  &.type-other {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+}
+
+// ── Empty state ──
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    color: var(--border-color);
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .empty-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 280px;
+  }
+}
+
+// ── No project state ──
+
+.no-project {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+
+  .no-project-icon {
+    font-size: 48px;
+    color: var(--border-color);
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+
+  .no-project-text {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+}
+
+// ── Loading state ──
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+
+  .loading-spinner {
+    color: var(--accent-primary);
+    font-size: 24px;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

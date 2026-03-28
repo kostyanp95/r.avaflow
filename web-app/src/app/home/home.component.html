@@ -1,85 +1,589 @@
 <nz-layout class="app-layout">
-  <nz-sider class="menu-sidebar" nzCollapsible nzWidth="256px" nzBreakpoint="md" [(nzCollapsed)]="isCollapsed" [nzTrigger]="null">
-    <div class="sidebar-logo">
-      <a href="http://localhost:4200/" target="_blank">
-        <img src="https://www.landslidemodels.org/symbols/logo_avaflow.png" alt="logo">
-        <h1>r.avaflow</h1>
+  <!-- Sidebar -->
+  <nz-sider
+    class="sidebar"
+    nzCollapsible
+    [nzWidth]="260"
+    [nzCollapsedWidth]="64"
+    nzBreakpoint="md"
+    [(nzCollapsed)]="isCollapsed"
+    [nzTrigger]="null">
+
+    <!-- Logo area -->
+    <div class="sidebar-logo" [class.collapsed]="isCollapsed">
+      <a href="http://localhost:4200/" target="_blank" class="logo-link">
+        <img src="https://www.landslidemodels.org/symbols/logo_avaflow.png" alt="r.avaflow logo" class="logo-img">
+        <span class="logo-text" *ngIf="!isCollapsed">r.avaflow</span>
       </a>
     </div>
-    <ul nz-menu nzSelectable nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <li nz-submenu nzOpen nzTitle="Projects" nzIcon="folder">
-        <ul>
-          <li *ngFor="let project of projects"
-              nz-menu-item
-              [nzSelected]="project.name === activeProjectName"
-              [nzDisabled]="!project.hasJson"
-              (click)="project.hasJson && openProject(project)"
-              class="project-item">
-            <span class="project-name" [title]="project.name">{{ project.name }}</span>
-            <span *ngIf="!project.hasJson" nz-icon nzType="warning" nzTheme="outline" style="color: #faad14; margin-left: 4px;" nz-tooltip nzTooltipTitle="No JSON config — edit not available"></span>
-            <span class="project-actions">
-              <span *ngIf="project.hasJson" nz-icon nzType="edit" nzTheme="outline"
-                    nz-tooltip nzTooltipTitle="Edit"
-                    (click)="openProject(project); $event.stopPropagation()">
-              </span>
+
+    <!-- Sidebar content scrollable area -->
+    <div class="sidebar-content">
+      <!-- Projects section -->
+      <div class="sidebar-section">
+        <div class="section-header" *ngIf="!isCollapsed" (click)="projectsExpanded = !projectsExpanded">
+          <span class="section-title">{{ 'sidebar.projects' | translate }}</span>
+          <span nz-icon [nzType]="projectsExpanded ? 'down' : 'right'" class="section-toggle"></span>
+        </div>
+        <div class="section-header collapsed-icon" *ngIf="isCollapsed" nz-tooltip [nzTooltipTitle]="'sidebar.projects' | translate" nzTooltipPlacement="right">
+          <span nz-icon nzType="folder" class="section-icon-collapsed"></span>
+        </div>
+
+        <div class="project-list" *ngIf="projectsExpanded || isCollapsed">
+          <div
+            *ngFor="let project of projects"
+            class="project-item"
+            [class.active]="project.name === activeProjectName"
+            [class.disabled]="!project.hasJson"
+            (click)="project.hasJson && openProject(project)"
+            [title]="project.name">
+
+            <!-- Active indicator strip -->
+            <div class="active-strip" *ngIf="project.name === activeProjectName"></div>
+
+            <div class="project-icon">
+              <span nz-icon [nzType]="project.hasJson ? 'file-text' : 'file-unknown'" nzTheme="outline"></span>
+            </div>
+            <span class="project-name" *ngIf="!isCollapsed">{{ project.name }}</span>
+
+            <!-- Status indicators -->
+            <span class="project-status" *ngIf="!isCollapsed">
+              <span *ngIf="project.hasJson" class="status-dot status-json" nz-tooltip [nzTooltipTitle]="'tooltips.jsonAvailable' | translate"></span>
+              <span *ngIf="project.hasScript" class="status-dot status-script" nz-tooltip [nzTooltipTitle]="'tooltips.scriptAvailable' | translate"></span>
+            </span>
+
+            <!-- Hover actions -->
+            <span class="project-actions" *ngIf="!isCollapsed">
               <span *ngIf="project.hasScript" nz-icon nzType="play-circle" nzTheme="outline"
-                    nz-tooltip nzTooltipTitle="Run"
+                    class="action-btn action-run"
+                    nz-tooltip [nzTooltipTitle]="'common.run' | translate"
                     (click)="runProject(project.name, $event)">
               </span>
               <span nz-icon nzType="delete" nzTheme="outline"
-                    nz-tooltip nzTooltipTitle="Delete"
+                    class="action-btn action-delete"
+                    nz-tooltip [nzTooltipTitle]="'common.delete' | translate"
                     nz-popconfirm
-                    nzPopconfirmTitle="Delete '{{ project.name }}'?"
+                    [nzPopconfirmTitle]="('common.confirmDelete' | translate: {name: project.name})"
                     nzPopconfirmPlacement="right"
-                    (nzOnConfirm)="deleteProject(project.name, $event)"
+                    (nzOnConfirm)="deleteProject(project.name)"
                     (click)="$event.stopPropagation()">
               </span>
             </span>
-          </li>
+          </div>
 
-          <li *ngIf="projects.length === 0" nz-menu-item nzDisabled>
-            <span nz-icon nzType="inbox"></span>&nbsp;No projects yet
-          </li>
+          <!-- Empty state -->
+          <div *ngIf="projects.length === 0" class="empty-state">
+            <span nz-icon nzType="inbox" class="empty-icon"></span>
+            <span *ngIf="!isCollapsed">{{ 'sidebar.noProjects' | translate }}</span>
+          </div>
 
-          <li>
-            <div class="d-flex justify-content-center align-items-center" style="padding: 8px 0;">
-              <button nz-button nzType="dashed" (click)="newProject(); $event.stopPropagation()">
-                <span nz-icon nzType="plus"></span> New project
-              </button>
-            </div>
-          </li>
-        </ul>
-      </li>
+          <!-- New project button -->
+          <div class="new-project-btn" (click)="newProject(); $event.stopPropagation()">
+            <span nz-icon nzType="plus"></span>
+            <span *ngIf="!isCollapsed">{{ 'sidebar.newProject' | translate }}</span>
+          </div>
+        </div>
+      </div>
 
-      <li nz-submenu nzOpen nzTitle="Info" nzIcon="question-circle">
-        <ul>
-          <li nz-menu-item>About r.avaflow</li>
-          <li nz-menu-item>About this app</li>
-          <li nz-menu-item>Help</li>
-        </ul>
-      </li>
-    </ul>
+      <!-- Info section -->
+      <div class="sidebar-section">
+        <div class="section-header" *ngIf="!isCollapsed" (click)="infoExpanded = !infoExpanded">
+          <span class="section-title">{{ 'sidebar.info' | translate }}</span>
+          <span nz-icon [nzType]="infoExpanded ? 'down' : 'right'" class="section-toggle"></span>
+        </div>
+        <div class="section-header collapsed-icon" *ngIf="isCollapsed" nz-tooltip [nzTooltipTitle]="'sidebar.info' | translate" nzTooltipPlacement="right">
+          <span nz-icon nzType="question-circle" class="section-icon-collapsed"></span>
+        </div>
+
+        <div class="info-list" *ngIf="infoExpanded && !isCollapsed">
+          <div class="info-item" [class.active]="infoPage === 'about-avaflow'" (click)="showInfoPage('about-avaflow')">
+            <span nz-icon nzType="global" nzTheme="outline"></span>
+            <span>{{ 'sidebar.aboutAvaflow' | translate }}</span>
+          </div>
+          <div class="info-item" [class.active]="infoPage === 'about-app'" (click)="showInfoPage('about-app')">
+            <span nz-icon nzType="info-circle" nzTheme="outline"></span>
+            <span>{{ 'sidebar.aboutApp' | translate }}</span>
+          </div>
+          <div class="info-item" [class.active]="infoPage === 'help'" (click)="showInfoPage('help')">
+            <span nz-icon nzType="book" nzTheme="outline"></span>
+            <span>{{ 'sidebar.documentation' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar footer: theme toggle + collapse -->
+    <div class="sidebar-footer">
+      <!-- Theme toggle pill -->
+      <div class="theme-toggle" *ngIf="!isCollapsed" (click)="toggleTheme()">
+        <div class="theme-pill" [class.dark]="isDark">
+          <span class="theme-option" [class.active]="!isDark">
+            <span nz-icon nzType="sun" nzTheme="outline" class="theme-icon"></span>
+          </span>
+          <span class="theme-option" [class.active]="isDark">
+            <span nz-icon nzType="moon" nzTheme="outline" class="theme-icon"></span>
+          </span>
+          <div class="theme-slider"></div>
+        </div>
+      </div>
+
+      <!-- Collapsed: icon-only toggle -->
+      <div class="theme-toggle-collapsed" *ngIf="isCollapsed" (click)="toggleTheme()"
+           nz-tooltip [nzTooltipTitle]="isDark ? ('sidebar.lightMode' | translate) : ('sidebar.darkMode' | translate)" nzTooltipPlacement="right">
+        <span nz-icon [nzType]="isDark ? 'sun' : 'moon'" nzTheme="outline"></span>
+      </div>
+
+      <!-- Language switcher -->
+      <div class="lang-switcher" *ngIf="!isCollapsed">
+        <span class="lang-option" [class.active]="currentLang === 'en'" (click)="switchLanguage('en')">EN</span>
+        <span class="lang-separator">|</span>
+        <span class="lang-option" [class.active]="currentLang === 'ru'" (click)="switchLanguage('ru')">RU</span>
+      </div>
+      <div class="lang-switcher-collapsed" *ngIf="isCollapsed"
+           (click)="switchLanguage(currentLang === 'en' ? 'ru' : 'en')"
+           nz-tooltip [nzTooltipTitle]="currentLang === 'en' ? 'RU' : 'EN'" nzTooltipPlacement="right">
+        <span class="lang-label">{{ currentLang | uppercase }}</span>
+      </div>
+
+      <!-- Collapse trigger -->
+      <div class="collapse-trigger" (click)="isCollapsed = !isCollapsed"
+           nz-tooltip [nzTooltipTitle]="isCollapsed ? ('sidebar.expandSidebar' | translate) : ('sidebar.collapseSidebar' | translate)" nzTooltipPlacement="right">
+        <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
+      </div>
+    </div>
   </nz-sider>
 
-  <nz-layout>
-    <nz-header>
-      <div class="app-header d-flex">
-        <span class="header-trigger d-flex" (click)="isCollapsed = !isCollapsed">
-          <span class="trigger" nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
-        </span>
-        <div class="row w-100">
-          <div class="col">
-            <h1 class="text-truncate m-0">
-              {{ activeProjectName || 'New project' }}
-            </h1>
+  <!-- Main content area -->
+  <nz-layout class="main-layout">
+    <!-- Header -->
+    <nz-header class="app-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="project-title">
+            {{ activeProjectName || ('common.newProject' | translate) }}
+          </h1>
+        </div>
+        <div class="header-tabs">
+          <div class="tab-item"
+               *ngFor="let tabKey of tabLabelKeys; let i = index"
+               [class.active]="selectedTabIndex === i && !infoPage"
+               (click)="selectedTabIndex = i; closeInfoPage()">
+            <span nz-icon [nzType]="tabIcons[i]" nzTheme="outline"></span>
+            <span class="tab-label">{{ tabKey | translate }}</span>
           </div>
         </div>
       </div>
     </nz-header>
 
-    <nz-content>
-      <div class="inner-content overflow-auto d-flex flex-column">
-        <nz-tabset class="flex-grow-1 overflow-auto" [(nzSelectedIndex)]="selectedTabIndex">
+    <!-- Content -->
+    <nz-content class="app-content">
+      <!-- Info pages -->
+      <div class="content-wrapper info-page-wrapper" *ngIf="infoPage">
+
+        <!-- Back button -->
+        <div class="info-page-back" (click)="closeInfoPage()">
+          <span nz-icon nzType="arrow-left" nzTheme="outline"></span>
+          <span>{{ 'info.backToProject' | translate }}</span>
+        </div>
+
+        <!-- ============================================================
+             About r.avaflow
+             ============================================================ -->
+        <div class="info-page" *ngIf="infoPage === 'about-avaflow'">
+          <div class="info-page-header">
+            <div class="info-page-icon info-page-icon--avaflow">
+              <span nz-icon nzType="experiment" nzTheme="outline"></span>
+            </div>
+            <div>
+              <h1 class="info-page-title">{{ 'info.avaflow.title' | translate }}</h1>
+              <p class="info-page-subtitle">{{ 'info.avaflow.subtitle' | translate }}</p>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.avaflow.overviewTitle' | translate }}</h2>
+            <p class="info-text" [innerHTML]="'info.avaflow.overviewP1' | translate"></p>
+            <p class="info-text" [innerHTML]="'info.avaflow.overviewP2' | translate"></p>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.avaflow.authorsTitle' | translate }}</h2>
+            <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+              <nz-descriptions-item [nzTitle]="'info.avaflow.authorsLeadDev' | translate">
+                {{ 'info.avaflow.authorsLeadDevValue' | translate }}
+              </nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.avaflow.authorsPhysModel' | translate">
+                {{ 'info.avaflow.authorsPhysModelValue' | translate }}
+              </nz-descriptions-item>
+            </nz-descriptions>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.avaflow.capabilitiesTitle' | translate }}</h2>
+            <div class="info-capabilities">
+              <div class="info-capability-item">
+                <span nz-icon nzType="swap" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap1Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap1Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-capability-item">
+                <span nz-icon nzType="interaction" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap2Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap2Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-capability-item">
+                <span nz-icon nzType="sync" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap3Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap3Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-capability-item">
+                <span nz-icon nzType="stop" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap4Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap4Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-capability-item">
+                <span nz-icon nzType="heat-map" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap5Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap5Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-capability-item">
+                <span nz-icon nzType="cluster" nzTheme="outline" class="capability-icon"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.cap6Title' | translate }}</strong>
+                  <p>{{ 'info.avaflow.cap6Desc' | translate }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.avaflow.referencesTitle' | translate }}</h2>
+            <div class="info-references">
+              <p class="info-reference" [innerHTML]="'info.avaflow.ref1' | translate"></p>
+              <p class="info-reference" [innerHTML]="'info.avaflow.ref2' | translate"></p>
+              <p class="info-reference" [innerHTML]="'info.avaflow.ref3' | translate"></p>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.avaflow.linksTitle' | translate }}</h2>
+            <div class="info-links">
+              <a href="https://www.avaflow.org" target="_blank" class="info-link-card">
+                <span nz-icon nzType="global" nzTheme="outline"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.linkAvaflowName' | translate }}</strong>
+                  <span>{{ 'info.avaflow.linkAvaflowDesc' | translate }}</span>
+                </div>
+                <span nz-icon nzType="link" nzTheme="outline" class="info-link-arrow"></span>
+              </a>
+              <a href="https://www.landslidemodels.org" target="_blank" class="info-link-card">
+                <span nz-icon nzType="deployment-unit" nzTheme="outline"></span>
+                <div>
+                  <strong>{{ 'info.avaflow.linkLandslidemodelsName' | translate }}</strong>
+                  <span>{{ 'info.avaflow.linkLandslidemodelsDesc' | translate }}</span>
+                </div>
+                <span nz-icon nzType="link" nzTheme="outline" class="info-link-arrow"></span>
+              </a>
+            </div>
+          </div>
+
+          <div class="info-version-badge">
+            <nz-tag nzColor="blue">r.avaflow 3 (20230127)</nz-tag>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             About this app
+             ============================================================ -->
+        <div class="info-page" *ngIf="infoPage === 'about-app'">
+          <div class="info-page-header">
+            <div class="info-page-icon info-page-icon--app">
+              <span nz-icon nzType="appstore" nzTheme="outline"></span>
+            </div>
+            <div>
+              <h1 class="info-page-title">{{ 'info.app.title' | translate }}</h1>
+              <p class="info-page-subtitle">{{ 'info.app.subtitle' | translate }}</p>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.app.overviewTitle' | translate }}</h2>
+            <p class="info-text" [innerHTML]="'info.app.overviewText' | translate"></p>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.app.featuresTitle' | translate }}</h2>
+            <div class="info-features-grid">
+              <div class="info-feature-card">
+                <span nz-icon nzType="folder-open" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat1Title' | translate }}</strong>
+                <p>{{ 'info.app.feat1Desc' | translate }}</p>
+              </div>
+              <div class="info-feature-card">
+                <span nz-icon nzType="ordered-list" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat2Title' | translate }}</strong>
+                <p>{{ 'info.app.feat2Desc' | translate }}</p>
+              </div>
+              <div class="info-feature-card">
+                <span nz-icon nzType="monitor" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat3Title' | translate }}</strong>
+                <p>{{ 'info.app.feat3Desc' | translate }}</p>
+              </div>
+              <div class="info-feature-card">
+                <span nz-icon nzType="bar-chart" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat4Title' | translate }}</strong>
+                <p>{{ 'info.app.feat4Desc' | translate }}</p>
+              </div>
+              <div class="info-feature-card">
+                <span nz-icon nzType="cloud-server" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat5Title' | translate }}</strong>
+                <p>{{ 'info.app.feat5Desc' | translate }}</p>
+              </div>
+              <div class="info-feature-card">
+                <span nz-icon nzType="bg-colors" nzTheme="outline" class="feature-card-icon"></span>
+                <strong>{{ 'info.app.feat6Title' | translate }}</strong>
+                <p>{{ 'info.app.feat6Desc' | translate }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.app.techStackTitle' | translate }}</h2>
+            <nz-descriptions nzBordered [nzColumn]="2" nzSize="small">
+              <nz-descriptions-item [nzTitle]="'info.app.techFrontend' | translate">{{ 'info.app.techFrontendValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.techUI' | translate">{{ 'info.app.techUIValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.techBackend' | translate">{{ 'info.app.techBackendValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.techRuntime' | translate">{{ 'info.app.techRuntimeValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.techComm' | translate">{{ 'info.app.techCommValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.techGIS' | translate">{{ 'info.app.techGISValue' | translate }}</nz-descriptions-item>
+            </nz-descriptions>
+          </div>
+
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.app.creditsTitle' | translate }}</h2>
+            <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+              <nz-descriptions-item [nzTitle]="'info.app.creditsAuthor' | translate">{{ 'info.app.creditsAuthorValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.creditsAvaflow' | translate">{{ 'info.app.creditsAvaflowValue' | translate }}</nz-descriptions-item>
+              <nz-descriptions-item [nzTitle]="'info.app.creditsLicense' | translate">{{ 'info.app.creditsLicenseValue' | translate }}</nz-descriptions-item>
+            </nz-descriptions>
+          </div>
+
+          <div class="info-version-badge">
+            <nz-tag nzColor="green">Web App v1.0</nz-tag>
+            <nz-tag nzColor="blue">Angular 15</nz-tag>
+            <nz-tag nzColor="purple">NestJS 9</nz-tag>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Documentation / Help
+             ============================================================ -->
+        <div class="info-page" *ngIf="infoPage === 'help'">
+          <div class="info-page-header">
+            <div class="info-page-icon info-page-icon--help">
+              <span nz-icon nzType="book" nzTheme="outline"></span>
+            </div>
+            <div>
+              <h1 class="info-page-title">{{ 'info.docs.title' | translate }}</h1>
+              <p class="info-page-subtitle">{{ 'info.docs.subtitle' | translate }}</p>
+            </div>
+          </div>
+
+          <!-- Quick start -->
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.docs.quickStartTitle' | translate }}</h2>
+            <div class="info-steps">
+              <div class="info-step">
+                <div class="info-step-number">1</div>
+                <div class="info-step-content">
+                  <strong>{{ 'info.docs.step1Title' | translate }}</strong>
+                  <p [innerHTML]="'info.docs.step1Desc' | translate"></p>
+                </div>
+              </div>
+              <div class="info-step">
+                <div class="info-step-number">2</div>
+                <div class="info-step-content">
+                  <strong>{{ 'info.docs.step2Title' | translate }}</strong>
+                  <p>{{ 'info.docs.step2Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-step">
+                <div class="info-step-number">3</div>
+                <div class="info-step-content">
+                  <strong>{{ 'info.docs.step3Title' | translate }}</strong>
+                  <p>{{ 'info.docs.step3Desc' | translate }}</p>
+                </div>
+              </div>
+              <div class="info-step">
+                <div class="info-step-number">4</div>
+                <div class="info-step-content">
+                  <strong>{{ 'info.docs.step4Title' | translate }}</strong>
+                  <p [innerHTML]="'info.docs.step4Desc' | translate"></p>
+                </div>
+              </div>
+              <div class="info-step">
+                <div class="info-step-number">5</div>
+                <div class="info-step-content">
+                  <strong>{{ 'info.docs.step5Title' | translate }}</strong>
+                  <p [innerHTML]="'info.docs.step5Desc' | translate"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parameter reference -->
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.docs.keyParamsTitle' | translate }}</h2>
+            <nz-table #paramTable [nzData]="[1]" [nzShowPagination]="false" nzSize="small" nzBordered>
+              <thead>
+                <tr>
+                  <th nzWidth="180px">{{ 'info.docs.paramCol' | translate }}</th>
+                  <th nzWidth="90px">{{ 'info.docs.typeCol' | translate }}</th>
+                  <th nzWidth="90px">{{ 'info.docs.defaultCol' | translate }}</th>
+                  <th>{{ 'info.docs.descriptionCol' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramPhases' | translate"></td>
+                  <td>{{ 'info.docs.paramPhasesType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramPhasesDefault' | translate"></td>
+                  <td [innerHTML]="'info.docs.paramPhasesDesc' | translate"></td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramCellsize' | translate"></td>
+                  <td>{{ 'info.docs.paramCellsizeType' | translate }}</td>
+                  <td>{{ 'info.docs.paramCellsizeDefault' | translate }}</td>
+                  <td>{{ 'info.docs.paramCellsizeDesc' | translate }}</td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramTint' | translate"></td>
+                  <td>{{ 'info.docs.paramTintType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramTintDefault' | translate"></td>
+                  <td>{{ 'info.docs.paramTintDesc' | translate }}</td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramDensity' | translate"></td>
+                  <td>{{ 'info.docs.paramDensityType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramDensityDefault' | translate"></td>
+                  <td [innerHTML]="'info.docs.paramDensityDesc' | translate"></td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramFriction' | translate"></td>
+                  <td>{{ 'info.docs.paramFrictionType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramFrictionDefault' | translate"></td>
+                  <td>{{ 'info.docs.paramFrictionDesc' | translate }}</td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramElevation' | translate"></td>
+                  <td>{{ 'info.docs.paramElevationType' | translate }}</td>
+                  <td>{{ 'info.docs.paramElevationDefault' | translate }}</td>
+                  <td>{{ 'info.docs.paramElevationDesc' | translate }}</td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramHrelease' | translate"></td>
+                  <td>{{ 'info.docs.paramHreleaseType' | translate }}</td>
+                  <td>{{ 'info.docs.paramHreleaseDefault' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramHreleaseDesc' | translate"></td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramEntrainment' | translate"></td>
+                  <td>{{ 'info.docs.paramEntrainmentType' | translate }}</td>
+                  <td>{{ 'info.docs.paramEntrainmentDefault' | translate }}</td>
+                  <td>{{ 'info.docs.paramEntrainmentDesc' | translate }}</td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramCfl' | translate"></td>
+                  <td>{{ 'info.docs.paramCflType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramCflDefault' | translate"></td>
+                  <td [innerHTML]="'info.docs.paramCflDesc' | translate"></td>
+                </tr>
+                <tr>
+                  <td [innerHTML]="'info.docs.paramThresholds' | translate"></td>
+                  <td>{{ 'info.docs.paramThresholdsType' | translate }}</td>
+                  <td [innerHTML]="'info.docs.paramThresholdsDefault' | translate"></td>
+                  <td>{{ 'info.docs.paramThresholdsDesc' | translate }}</td>
+                </tr>
+              </tbody>
+            </nz-table>
+            <p class="info-text info-text--hint" [innerHTML]="'info.docs.paramFullListHint' | translate"></p>
+          </div>
+
+          <!-- FAQ -->
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.docs.faqTitle' | translate }}</h2>
+            <nz-collapse>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq1Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq1Answer' | translate"></p>
+              </nz-collapse-panel>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq2Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq2Answer' | translate"></p>
+              </nz-collapse-panel>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq3Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq3Answer' | translate"></p>
+              </nz-collapse-panel>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq4Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq4Answer' | translate"></p>
+              </nz-collapse-panel>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq5Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq5Answer' | translate"></p>
+              </nz-collapse-panel>
+              <nz-collapse-panel [nzHeader]="'info.docs.faq6Title' | translate" [nzActive]="false">
+                <p [innerHTML]="'info.docs.faq6Answer' | translate"></p>
+              </nz-collapse-panel>
+            </nz-collapse>
+          </div>
+
+          <!-- External links -->
+          <div class="info-section">
+            <h2 class="info-section-title">{{ 'info.docs.externalResourcesTitle' | translate }}</h2>
+            <div class="info-links">
+              <a href="https://www.avaflow.org" target="_blank" class="info-link-card">
+                <span nz-icon nzType="file-text" nzTheme="outline"></span>
+                <div>
+                  <strong>{{ 'info.docs.extOfficialDocsName' | translate }}</strong>
+                  <span>{{ 'info.docs.extOfficialDocsDesc' | translate }}</span>
+                </div>
+                <span nz-icon nzType="link" nzTheme="outline" class="info-link-arrow"></span>
+              </a>
+              <a href="https://www.landslidemodels.org" target="_blank" class="info-link-card">
+                <span nz-icon nzType="team" nzTheme="outline"></span>
+                <div>
+                  <strong>{{ 'info.docs.extCommunityName' | translate }}</strong>
+                  <span>{{ 'info.docs.extCommunityDesc' | translate }}</span>
+                </div>
+                <span nz-icon nzType="link" nzTheme="outline" class="info-link-arrow"></span>
+              </a>
+              <a href="https://grass.osgeo.org/grass84/manuals/" target="_blank" class="info-link-card">
+                <span nz-icon nzType="read" nzTheme="outline"></span>
+                <div>
+                  <strong>{{ 'info.docs.extGrassName' | translate }}</strong>
+                  <span>{{ 'info.docs.extGrassDesc' | translate }}</span>
+                </div>
+                <span nz-icon nzType="link" nzTheme="outline" class="info-link-arrow"></span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Normal tab content (hidden when info page is open) -->
+      <div class="content-wrapper" *ngIf="!infoPage">
+        <nz-tabset
+          class="main-tabset"
+          [(nzSelectedIndex)]="selectedTabIndex"
+          [nzTabBarStyle]="{ display: 'none' }">
           <nz-tab nzTitle="Parameters">
             <app-simulation-wizard
               (simulationStarted)="onSimulationStarted()"
@@ -96,8 +600,10 @@
       </div>
     </nz-content>
 
-    <nz-footer class="p-2">Puganov K., 2023. r.avaflow WEB APP — UI for work with r.avaflow &amp; Mergili, M.,
-      Pudasaini, S.P., 2014–2023. r.avaflow - The mass flow simulation tool. <a href="https://www.avaflow.org" target="_blank">https://www.avaflow.org</a>
+    <!-- Footer -->
+    <nz-footer class="app-footer">
+      {{ 'footer.text' | translate }}
+      <a href="https://www.avaflow.org" target="_blank">avaflow.org</a>
     </nz-footer>
   </nz-layout>
 </nz-layout>
