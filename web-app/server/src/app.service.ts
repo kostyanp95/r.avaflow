@@ -82,12 +82,10 @@ const SCALAR_DEFAULTS: Record<string, number> = {
 @Injectable()
 export class AppService {
   projectRasters: Array<Rasters>;
-  private readonly dockerImage =
-    process.env.AVAFLOW_DOCKER_IMAGE || 'r.avaflow:base';
-  private readonly projectsVolume =
+  private readonly avaflowModule = process.env.AVAFLOW_MODULE || 'r.avaflow';
+  projectsRoot =
     process.env.AVAFLOW_PROJECTS_PATH ||
     path.resolve(__dirname, '..', '..', '..', 'projects');
-  projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
   uploadsPath = path.join(this.projectsRoot, 'uploads');
 
   constructor(private readonly appGateway: AppGateway) {}
@@ -246,14 +244,19 @@ export class AppService {
     if (p.flag_m) flags += ' -m';
 
     // 2. Phases mapping
-    const phasesStr = p.phases === 1 ? 's' : 's,fs,f';
+    let phasesStr: string;
+    if (typeof p.phases === 'string') {
+      phasesStr = p.phases;
+    } else {
+      phasesStr = p.phases === 1 ? 's' : 's,fs,f';
+    }
 
     // Start building command parts (will be joined with line continuations)
     const parts: string[] = [];
 
     // Flags + prefix + cellsize + phases (first line)
     parts.push(
-      `r.avaflow ${flags} prefix=${this.sanitizeProjectName(experiment.name)} cellsize=${this.validateNumber(p.cellsize, 'cellsize')} phases=${phasesStr}`,
+      `${this.avaflowModule} ${flags} prefix=${this.sanitizeProjectName(experiment.name)} cellsize=${this.validateNumber(p.cellsize, 'cellsize')} phases=${phasesStr}`,
     );
 
     // 3. Elevation (always required)
@@ -428,8 +431,7 @@ export class AppService {
     const script =
       initialCommands + experimentsScripts.join('') + '\ng.region -d\n';
 
-    const projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
-    const projectPath = path.join(projectsRoot, safeName);
+    const projectPath = path.join(this.projectsRoot, safeName);
 
     if (!fs.existsSync(projectPath)) {
       fs.mkdirSync(projectPath, { recursive: true });
@@ -487,27 +489,22 @@ export class AppService {
   }
 
   private runningProcess: ChildProcess | null = null;
-  private containerName: string | null = null;
 
   runSimulation(projectName: string): { success: boolean; message: string } {
     if (this.runningProcess) {
       return { success: false, message: 'A simulation is already running' };
     }
 
-    const containerName = `avaflow-${projectName}-${Date.now()}`;
-    const shellCmd = `cd /r.avaflow/projects/${projectName} && bash ${projectName}.sh`;
+    const safeName = this.sanitizeProjectName(projectName);
+    const projectPath = path.join(this.projectsRoot, safeName);
+    const shellCmd = `cd ${projectPath} && bash ${safeName}.sh`;
 
-    const child = spawn('docker', [
-      'run', '--rm',
-      '--name', containerName,
-      '-v', `${this.projectsVolume}:/r.avaflow/projects`,
-      this.dockerImage,
-      'grass', '--tmp-project', 'XY', '--exec',
+    const child = spawn('grass', [
+      '--tmp-project', 'XY', '--exec',
       'bash', '-c', shellCmd,
     ]);
 
     this.runningProcess = child;
-    this.containerName = containerName;
 
     const emitLine = (line: string) => {
       this.appGateway.server.emit('simulationLog', {
@@ -528,9 +525,8 @@ export class AppService {
 
     child.on('close', (exitCode: number) => {
       this.runningProcess = null;
-      this.containerName = null;
       this.appGateway.server.emit('simulationDone', {
-        projectName,
+        projectName: safeName,
         exitCode: exitCode ?? 1,
         success: exitCode === 0,
       });
@@ -538,16 +534,15 @@ export class AppService {
 
     child.on('error', (err: Error) => {
       this.runningProcess = null;
-      this.containerName = null;
-      emitLine(`Error spawning Docker: ${err.message}`);
+      emitLine(`Error spawning GRASS: ${err.message}`);
       this.appGateway.server.emit('simulationDone', {
-        projectName,
+        projectName: safeName,
         exitCode: 1,
         success: false,
       });
     });
 
-    return { success: true, message: `Simulation started for project: ${projectName}` };
+    return { success: true, message: `Simulation started for project: ${safeName}` };
   }
 
   stopSimulation(): { success: boolean; message: string } {
@@ -557,7 +552,6 @@ export class AppService {
 
     this.runningProcess.kill();
     this.runningProcess = null;
-    this.containerName = null;
     return { success: true, message: 'Simulation stop signal sent' };
   }
 
