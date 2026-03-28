@@ -63,7 +63,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       phases: [D.phases],
       ctopo: [D.ctopo === 1],
       limiter: [D.limiter],
-      gravity: [D.gravity, [Validators.required, Validators.min(0)]],
+      gravity: [D.gravity, [Validators.required, Validators.min(0.01)]],
       cores: [D.cores, [Validators.required, Validators.min(1)]],
       // Advanced simulation settings (collapsible)
       threshold1: [D.thresholds[0]],
@@ -71,7 +71,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       threshold3: [D.thresholds[2]],
       threshold4: [D.thresholds[3]],
       threshold5: [D.thresholds[4]],
-      cfl_number: [D.cfl[0], [Validators.max(0.5)]],
+      cfl_number: [D.cfl[0], [Validators.min(0.01), Validators.max(0.5)]],
       cfl_timestep: [D.cfl[1]],
       slomo_time: [D.slomo[0]],
       slomo_viscosity: [D.slomo[1]],

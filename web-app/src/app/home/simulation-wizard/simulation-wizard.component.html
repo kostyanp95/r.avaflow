@@ -64,7 +64,7 @@
                     nz-tooltip [nzTooltipTitle]="'wizard.step0.gravityTooltip' | translate"></span>
             </nz-form-label>
             <nz-form-control>
-              <nz-input-number formControlName="gravity" [nzMin]="0" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
+              <nz-input-number formControlName="gravity" [nzMin]="0.01" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
             </nz-form-control>
           </nz-form-item>
 
@@ -123,7 +123,10 @@
         <nz-collapse style="margin-top: 16px;">
           <nz-collapse-panel [nzHeader]="'wizard.step0.advancedSettings' | translate" [nzActive]="false">
 
-            <div class="section-title">{{ 'wizard.step0.thresholds' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step0.thresholds' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step0.thresholdsGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-3">
               <nz-form-item>
                 <nz-form-label>{{ 'wizard.step0.threshDisplay' | translate }}
@@ -169,12 +172,15 @@
                         nz-tooltip [nzTooltipTitle]="'wizard.step0.threshVelocityTooltip' | translate"></span>
                 </nz-form-label>
                 <nz-form-control>
-                  <nz-input-number formControlName="threshold5" [nzStep]="0.000001" style="width: 100%;"></nz-input-number>
+                  <nz-input-number formControlName="threshold5" [nzMin]="0.0000001" [nzStep]="0.000001" style="width: 100%;"></nz-input-number>
                 </nz-form-control>
               </nz-form-item>
             </div>
 
-            <div class="section-title">{{ 'wizard.step0.cflSection' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step0.cflSection' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step0.cflGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-2">
               <nz-form-item>
                 <nz-form-label>{{ 'wizard.step0.cflNumber' | translate }}
@@ -182,7 +188,7 @@
                         nz-tooltip [nzTooltipTitle]="'wizard.step0.cflNumberTooltip' | translate"></span>
                 </nz-form-label>
                 <nz-form-control>
-                  <nz-input-number formControlName="cfl_number" [nzMin]="0" [nzMax]="0.5" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
+                  <nz-input-number formControlName="cfl_number" [nzMin]="0.01" [nzMax]="0.5" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
                 </nz-form-control>
               </nz-form-item>
               <nz-form-item>
@@ -196,7 +202,10 @@
               </nz-form-item>
             </div>
 
-            <div class="section-title">{{ 'wizard.step0.slomoSection' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step0.slomoSection' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step0.slomoGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-3">
               <nz-form-item>
                 <nz-form-label>{{ 'wizard.step0.slomoTime' | translate }}
@@ -227,7 +236,10 @@
               </nz-form-item>
             </div>
 
-            <div class="section-title">{{ 'wizard.step0.multipleRuns' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step0.multipleRuns' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step0.multipleRunsGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-2">
               <nz-form-item>
                 <nz-form-control>
@@ -249,7 +261,10 @@
               </nz-form-item>
             </div>
 
-            <div class="section-title">{{ 'wizard.step0.aoiSection' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step0.aoiSection' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step0.aoiGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-2">
               <nz-form-item>
                 <nz-form-label>{{ 'wizard.step0.aoiNorth' | translate }}
@@ -321,7 +336,10 @@
           </nz-form-control>
         </nz-form-item>
 
-        <div class="section-title">{{ 'wizard.step1.releaseHeights' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step1.releaseHeights' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step1.releaseHeightsGroupTooltip' | translate"></span>
+        </div>
         <div class="form-grid cols-3">
           <nz-form-item>
             <nz-form-label>{{ 'wizard.step1.hrelease1' | translate }}
@@ -372,7 +390,10 @@
           </nz-form-control>
         </nz-form-item>
 
-        <div class="section-title">{{ 'wizard.step1.releaseTime' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step1.releaseTime' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step1.releaseTimeGroupTooltip' | translate"></span>
+        </div>
         <div class="form-grid cols-2">
           <nz-form-item>
             <nz-form-label>{{ 'wizard.step1.trelease' | translate }}
@@ -398,7 +419,10 @@
           </nz-form-item>
         </div>
 
-        <div class="section-title">{{ 'wizard.step1.initialVelocity' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step1.initialVelocity' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step1.initialVelocityGroupTooltip' | translate"></span>
+        </div>
         <div class="form-grid cols-2">
           <nz-form-item>
             <nz-form-label>{{ 'wizard.step1.vinx1' | translate }}
@@ -455,7 +479,10 @@
           </nz-form-item>
         </div>
 
-        <div class="section-title">{{ 'wizard.step1.hydrographSection' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step1.hydrographSection' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step1.hydrographGroupTooltip' | translate"></span>
+        </div>
         <div class="form-grid cols-2">
           <nz-form-item>
             <nz-form-label>{{ 'wizard.step1.hydrograph' | translate }}
@@ -622,7 +649,10 @@
         <!-- Inter-phase Interactions (collapsible, multi-phase only) -->
         <nz-collapse *ngIf="isMultiPhase" style="margin-top: 16px;">
           <nz-collapse-panel [nzHeader]="'wizard.step2.interPhase' | translate" [nzActive]="false">
-            <div class="section-title">{{ 'wizard.step2.drag' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step2.drag' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step2.dragGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-3">
               <nz-form-item>
                 <nz-form-label>KDrag (m/s)
@@ -665,7 +695,10 @@
               </nz-form-item>
             </div>
 
-            <div class="section-title">{{ 'wizard.step2.virtualMass' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step2.virtualMass' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step2.virtualMassGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-3">
               <nz-form-item>
                 <nz-form-label>Nvm</nz-form-label>
@@ -692,7 +725,10 @@
         <!-- Block Sliding & Advanced (collapsible) -->
         <nz-collapse style="margin-top: 16px;">
           <nz-collapse-panel [nzHeader]="'wizard.step2.blockSliding' | translate" [nzActive]="false">
-            <div class="section-title">{{ 'wizard.step2.slidepar' | translate }}</div>
+            <div class="section-title">{{ 'wizard.step2.slidepar' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.step2.slideparGroupTooltip' | translate"></span>
+            </div>
             <div class="form-grid cols-3">
               <nz-form-item><nz-form-label>{{ 'wizard.step2.exp1' | translate }}</nz-form-label><nz-form-control><nz-input-number formControlName="slidepar0" [nzMin]="0" [nzMax]="2" [nzStep]="1" style="width: 100%;"></nz-input-number></nz-form-control></nz-form-item>
               <nz-form-item><nz-form-label>{{ 'wizard.step2.exp2' | translate }}</nz-form-label><nz-form-control><nz-input-number formControlName="slidepar1" [nzMin]="0" [nzMax]="2" [nzStep]="1" style="width: 100%;"></nz-input-number></nz-form-control></nz-form-item>
@@ -804,7 +840,10 @@
 
       <form nz-form nzLayout="vertical" [formGroup]="entrainmentForm">
         <!-- Entrainment section -->
-        <div class="section-title">{{ 'wizard.step3.entrainment' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step3.entrainment' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step3.entrainmentGroupTooltip' | translate"></span>
+        </div>
         <nz-form-item>
           <nz-form-control>
             <nz-switch formControlName="centrainment"></nz-switch>
@@ -822,7 +861,7 @@
                     nz-tooltip [nzTooltipTitle]="'wizard.step3.entrainmentCoeffTooltip' | translate"></span>
             </nz-form-label>
             <nz-form-control>
-              <nz-input-number formControlName="entrainment_coeff" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
+              <nz-input-number formControlName="entrainment_coeff" [nzMax]="0" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
@@ -901,7 +940,10 @@
         </nz-form-item>
 
         <!-- Stopping section -->
-        <div class="section-title">{{ 'wizard.step3.stopping' | translate }}</div>
+        <div class="section-title">{{ 'wizard.step3.stopping' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.step3.stoppingGroupTooltip' | translate"></span>
+        </div>
         <div class="form-grid cols-2">
           <nz-form-item>
             <nz-form-label>{{ 'wizard.step3.cstopping' | translate }}
@@ -929,7 +971,10 @@
 
         <!-- Phase Transformation (multi-phase only) -->
         <ng-container *ngIf="isMultiPhase">
-          <div class="section-title">{{ 'wizard.step3.phaseTransformation' | translate }}</div>
+          <div class="section-title">{{ 'wizard.step3.phaseTransformation' | translate }}
+            <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                  nz-tooltip [nzTooltipTitle]="'wizard.step3.phaseTransformationGroupTooltip' | translate"></span>
+          </div>
           <nz-form-item>
             <nz-form-control>
               <nz-switch formControlName="cmelt"></nz-switch>
@@ -940,26 +985,55 @@
             </nz-form-control>
           </nz-form-item>
 
-          <div class="section-title">{{ 'wizard.step3.transformationCoeff' | translate }}</div>
-          <div class="form-grid cols-3">
-            <nz-form-item>
-              <nz-form-label>{{ 'wizard.step3.trans12' | translate }}</nz-form-label>
-              <nz-form-control>
-                <nz-input-number formControlName="transformation0" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-              <nz-form-label>{{ 'wizard.step3.trans13' | translate }}</nz-form-label>
-              <nz-form-control>
-                <nz-input-number formControlName="transformation1" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-              <nz-form-label>{{ 'wizard.step3.trans23' | translate }}</nz-form-label>
-              <nz-form-control>
-                <nz-input-number formControlName="transformation2" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
-              </nz-form-control>
-            </nz-form-item>
+          <div class="form-grid cols-2">
+            <div>
+              <div class="section-title">{{ 'wizard.step3.transformationCoeff' | translate }}</div>
+              <nz-form-item>
+                <nz-form-label>{{ 'wizard.step3.trans12' | translate }}</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number formControlName="transformation0" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label>{{ 'wizard.step3.trans13' | translate }}</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number formControlName="transformation1" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label>{{ 'wizard.step3.trans23' | translate }}</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number formControlName="transformation2" [nzStep]="0.5" style="width: 100%;"></nz-input-number>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <div>
+              <div class="section-title">{{ 'wizard.step3.transformRasters' | translate }}</div>
+              <nz-form-item>
+                <nz-form-label>ctrans12</nz-form-label>
+                <nz-form-control>
+                  <nz-select formControlName="ctrans12" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                    <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                  </nz-select>
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label>ctrans13</nz-form-label>
+                <nz-form-control>
+                  <nz-select formControlName="ctrans13" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                    <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                  </nz-select>
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label>ctrans23</nz-form-label>
+                <nz-form-control>
+                  <nz-select formControlName="ctrans23" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                    <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                  </nz-select>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
           </div>
 
           <div *ngIf="isMeltActive">
@@ -998,34 +1072,6 @@
                 </nz-form-control>
               </nz-form-item>
             </div>
-          </div>
-
-          <div class="section-title">{{ 'wizard.step3.transformRasters' | translate }}</div>
-          <div class="form-grid cols-3">
-            <nz-form-item>
-              <nz-form-label>ctrans12</nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="ctrans12" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-              <nz-form-label>ctrans13</nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="ctrans13" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-              <nz-form-label>ctrans23</nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="ctrans23" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
           </div>
 
           <nz-form-item>
@@ -1073,81 +1119,88 @@
           {{ 'wizard.step4.endTimeValidation' | translate }}
         </div>
 
-        <div class="section-title">{{ 'wizard.step4.outputFlags' | translate }}</div>
         <div class="form-grid cols-2">
-          <nz-form-item>
-            <nz-form-control>
-              <nz-switch formControlName="flag_v"></nz-switch>
-              <span class="switch-label">{{ 'wizard.step4.flagV' | translate }}
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip [nzTooltipTitle]="'wizard.step4.flagVTooltip' | translate"></span>
-              </span>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-control>
-              <nz-switch formControlName="flag_k"></nz-switch>
-              <span class="switch-label">{{ 'wizard.step4.flagK' | translate }}
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip [nzTooltipTitle]="'wizard.step4.flagKTooltip' | translate"></span>
-              </span>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-control>
-              <nz-switch formControlName="flag_a"></nz-switch>
-              <span class="switch-label">{{ 'wizard.step4.flagA' | translate }}
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip [nzTooltipTitle]="'wizard.step4.flagATooltip' | translate"></span>
-              </span>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-control>
-              <nz-switch formControlName="flag_t"></nz-switch>
-              <span class="switch-label">{{ 'wizard.step4.flagT' | translate }}
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip [nzTooltipTitle]="'wizard.step4.flagTTooltip' | translate"></span>
-              </span>
-            </nz-form-control>
-          </nz-form-item>
-        </div>
-
-        <div class="section-title">{{ 'wizard.step4.referenceData' | translate }}</div>
-        <div class="form-grid cols-3">
-          <nz-form-item>
-            <nz-form-label>{{ 'wizard.step4.impactarea' | translate }}
+          <div>
+            <div class="section-title">{{ 'wizard.step4.outputFlags' | translate }}
               <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip [nzTooltipTitle]="'wizard.step4.impactareaTooltip' | translate"></span>
-            </nz-form-label>
-            <nz-form-control>
-              <nz-select formControlName="impactarea" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>{{ 'wizard.step4.hdeposit' | translate }}
+                    nz-tooltip [nzTooltipTitle]="'wizard.step4.outputFlagsGroupTooltip' | translate"></span>
+            </div>
+            <nz-form-item>
+              <nz-form-control>
+                <nz-switch formControlName="flag_v"></nz-switch>
+                <span class="switch-label">{{ 'wizard.step4.flagV' | translate }}
+                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                        nz-tooltip [nzTooltipTitle]="'wizard.step4.flagVTooltip' | translate"></span>
+                </span>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-control>
+                <nz-switch formControlName="flag_k"></nz-switch>
+                <span class="switch-label">{{ 'wizard.step4.flagK' | translate }}
+                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                        nz-tooltip [nzTooltipTitle]="'wizard.step4.flagKTooltip' | translate"></span>
+                </span>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-control>
+                <nz-switch formControlName="flag_a"></nz-switch>
+                <span class="switch-label">{{ 'wizard.step4.flagA' | translate }}
+                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                        nz-tooltip [nzTooltipTitle]="'wizard.step4.flagATooltip' | translate"></span>
+                </span>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-control>
+                <nz-switch formControlName="flag_t"></nz-switch>
+                <span class="switch-label">{{ 'wizard.step4.flagT' | translate }}
+                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                        nz-tooltip [nzTooltipTitle]="'wizard.step4.flagTTooltip' | translate"></span>
+                </span>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <div>
+            <div class="section-title">{{ 'wizard.step4.referenceData' | translate }}
               <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip [nzTooltipTitle]="'wizard.step4.hdepositTooltip' | translate"></span>
-            </nz-form-label>
-            <nz-form-control>
-              <nz-select formControlName="hdeposit" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label>{{ 'wizard.step4.zones' | translate }}
-              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip [nzTooltipTitle]="'wizard.step4.zonesTooltip' | translate"></span>
-            </nz-form-label>
-            <nz-form-control>
-              <nz-select formControlName="zones" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
-                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-              </nz-select>
-            </nz-form-control>
-          </nz-form-item>
+                    nz-tooltip [nzTooltipTitle]="'wizard.step4.referenceDataGroupTooltip' | translate"></span>
+            </div>
+            <nz-form-item>
+              <nz-form-label>{{ 'wizard.step4.impactarea' | translate }}
+                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                      nz-tooltip [nzTooltipTitle]="'wizard.step4.impactareaTooltip' | translate"></span>
+              </nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="impactarea" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>{{ 'wizard.step4.hdeposit' | translate }}
+                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                      nz-tooltip [nzTooltipTitle]="'wizard.step4.hdepositTooltip' | translate"></span>
+              </nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="hdeposit" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>{{ 'wizard.step4.zones' | translate }}
+                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                      nz-tooltip [nzTooltipTitle]="'wizard.step4.zonesTooltip' | translate"></span>
+              </nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="zones" [nzPlaceHolder]="'wizard.step1.selectRaster' | translate" nzAllowClear>
+                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
         </div>
         <div class="form-grid cols-2">
           <nz-form-item>

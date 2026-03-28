@@ -175,12 +175,14 @@
 // ── Section headers inside steps ──
 
 .section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 12px 0 6px 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 20px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--accent-primary-light);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -233,10 +235,10 @@
     width: 100% !important;
   }
 
-  // Form labels
+  // Form labels — smaller than section titles for clear hierarchy
   .ant-form-item-label > label {
     color: var(--text-secondary) !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 500 !important;
   }
 

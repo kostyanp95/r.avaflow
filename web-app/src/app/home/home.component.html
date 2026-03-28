@@ -38,9 +38,6 @@
             (click)="project.hasJson && openProject(project)"
             [title]="project.name">
 
-            <!-- Active indicator strip -->
-            <div class="active-strip" *ngIf="project.name === activeProjectName"></div>
-
             <div class="project-icon">
               <span nz-icon [nzType]="project.hasJson ? 'file-text' : 'file-unknown'" nzTheme="outline"></span>
             </div>
