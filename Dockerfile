@@ -1,10 +1,15 @@
-FROM ubuntu:20.04 AS base
+FROM ubuntu:22.04 AS base
 
 WORKDIR /r.avaflow
 
 COPY . .
 
-#4 Update packages repository, install locate
+#3.5 Switch to Yandex mirror (more reliable from Russia than Ubuntu CDN)
+RUN sed -i \
+    's|http://archive.ubuntu.com|http://mirror.yandex.ru|g; s|http://security.ubuntu.com|http://mirror.yandex.ru|g' \
+    /etc/apt/sources.list
+
+#4 Update packages repository, install locale
 RUN apt-get update && \
     apt-get install locales -y && \
     locale-gen en_US.UTF-8 && \
@@ -19,37 +24,38 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN ln -fs /bin/bash /bin/sh
 
 #7 Making sure that Python 3 is used
-RUN apt install python3-pip -y && \
-    echo "alias python=python3" >> ~/.bash_aliases && \
-    source ~/.bash_aliases
+RUN apt-get install -y --no-install-recommends python3 python3-pip python3-setuptools python3-wheel curl gnupg && \
+    echo "alias python=python3" >> ~/.bash_aliases
 
-#8 Selecting suitable repository
-RUN apt install -y software-properties-common && \
-    add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y && \
-    apt update -y
+#8 Adding ubuntugis PPA manually (no software-properties-common needed)
+RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B827C12C2D425E227EDCA75089EBE08314DF160" | \
+        gpg --dearmor -o /usr/share/keyrings/ubuntugis.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/ubuntugis.gpg] https://ppa.launchpadcontent.net/ubuntugis/ubuntugis-unstable/ubuntu jammy main" \
+        > /etc/apt/sources.list.d/ubuntugis-unstable.list && \
+    apt-get update -y
 
 #9 Installing necessary additional packages
-RUN apt update && \
-    apt install libgeos-dev -y && \
-    apt install libproj-dev proj-data proj-bin -y && \
-    apt install libgdal-dev python3-gdal gdal-bin -y
+RUN apt-get install -y --no-install-recommends libgeos-dev && \
+    apt-get install -y --no-install-recommends libproj-dev proj-data proj-bin && \
+    apt-get install -y --no-install-recommends libgdal-dev python3-gdal gdal-bin
 
-#10 Installing GRASS GIS (dev package)
-RUN apt update -y && \
-    apt install grass-dev grass-doc grass-gui -y
+#10 Installing GRASS GIS (headless, no GUI/docs needed in Docker)
+RUN apt-get install -y --no-install-recommends grass-core grass-dev git make gcc --fix-missing
 
 #11 Installing pillow
-RUN apt install python3-pip -y && \
-    python3 -m pip install --upgrade pillow
+RUN apt-get install -y --no-install-recommends python3-pil
 
 #12 Installing R statistical software
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && \
-    add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/' && \
-    apt update -y && \
-    apt install r-base r-base-core -y
+RUN curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+        gpg --dearmor -o /usr/share/keyrings/r-project.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" \
+        > /etc/apt/sources.list.d/r-project.list && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends r-base r-base-core
 
 #13 Installing necessary additional R packages
-RUN echo 'install.packages(c("stats","foreign","sp","rgeos","rgdal","raster","maptools","ROCR","fmsb", "Rcpp"), lib="/usr/lib/R/library/", repos = "http://cran.case.edu" )' > ./avaflow/install.packages.R && \
+# Note: rgdal/rgeos/maptools retired from CRAN in 2023, replaced by sf/terra
+RUN echo 'install.packages(c("stats","foreign","sp","sf","terra","raster","ROCR","fmsb","Rcpp"), lib="/usr/lib/R/library/", repos="https://cloud.r-project.org")' > ./avaflow/install.packages.R && \
     R CMD BATCH ./avaflow/install.packages.R
 
 #14 Installing r.avaflow extension in GRASS GIS
@@ -63,7 +69,7 @@ WORKDIR /r.avaflow/web-app
 
 COPY . .
 
-#15 Install Node.js and npm dependisies
+#15 Install Node.js and npm dependencies
 RUN apt-get update && apt-get install -y curl && \
     curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs && \

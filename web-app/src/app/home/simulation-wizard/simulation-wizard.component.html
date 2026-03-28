@@ -1,57 +1,78 @@
 <div class="wizard-container">
-  <nz-steps [nzCurrent]="currentStep" nzSize="small">
-    <nz-step nzTitle="Project Setup"></nz-step>
-    <nz-step nzTitle="Raster Files"></nz-step>
-    <nz-step nzTitle="Materials"></nz-step>
-    <nz-step nzTitle="Advanced"></nz-step>
-    <nz-step nzTitle="Review & Run"></nz-step>
-  </nz-steps>
+  <!-- Custom stepper -->
+  <div class="wizard-stepper">
+    <div class="wizard-step"
+         *ngFor="let stepKey of stepKeys; let i = index"
+         [class.active]="currentStep === i"
+         [class.completed]="currentStep > i">
+      <div class="step-indicator">
+        <div class="step-circle">
+          <span *ngIf="currentStep <= i">{{ i + 1 }}</span>
+          <span *ngIf="currentStep > i" nz-icon nzType="check" nzTheme="outline"></span>
+        </div>
+        <span class="step-label">{{ stepKey | translate }}</span>
+      </div>
+      <div class="step-connector"></div>
+    </div>
+  </div>
 
   <div class="steps-content">
 
     <!-- Step 0: Project Setup -->
-    <form *ngIf="currentStep === 0" nz-form nzLayout="vertical" [formGroup]="projectForm">
-      <nz-form-item>
-        <nz-form-label nzRequired>Project name</nz-form-label>
-        <nz-form-control nzErrorTip="Alphanumeric and underscore only">
-          <input nz-input formControlName="name" placeholder="my_project" />
-          <div class="ant-form-item-extra">Used as folder name</div>
-        </nz-form-control>
-      </nz-form-item>
+    <div *ngIf="currentStep === 0" class="step-card">
+      <div class="step-card-header">
+        <h3>{{ 'wizard.projectSetup.title' | translate }}</h3>
+        <p>{{ 'wizard.projectSetup.subtitle' | translate }}</p>
+      </div>
 
-      <nz-form-item>
-        <nz-form-label nzRequired>Output prefix
-          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                nz-tooltip nzTooltipTitle="Prefix for the output files and folders. Any type of string can be used, but empty spaces or special characters are not allowed."></span>
-        </nz-form-label>
-        <nz-form-control nzErrorTip="Alphanumeric and underscore only, max 20 chars">
-          <input nz-input formControlName="prefix" placeholder="sim" />
-        </nz-form-control>
-      </nz-form-item>
+      <form nz-form nzLayout="vertical" [formGroup]="projectForm">
+        <nz-form-item>
+          <nz-form-label nzRequired>{{ 'wizard.projectSetup.projectName' | translate }}</nz-form-label>
+          <nz-form-control [nzErrorTip]="'wizard.projectSetup.projectNameError' | translate">
+            <input nz-input formControlName="name" placeholder="my_project" />
+            <div class="ant-form-item-extra">{{ 'wizard.projectSetup.projectNameHint' | translate }}</div>
+          </nz-form-control>
+        </nz-form-item>
 
-      <nz-form-item>
-        <nz-form-label nzRequired>Cell size (m)
-          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                nz-tooltip nzTooltipTitle="Cell size in metres to be used for the model. Smaller values increase accuracy but significantly increase computation time."></span>
-        </nz-form-label>
-        <nz-form-control nzErrorTip="Must be at least 1">
-          <nz-input-number formControlName="cellsize" [nzMin]="1" [nzStep]="1" style="width: 100%;"></nz-input-number>
-        </nz-form-control>
-      </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzRequired>{{ 'wizard.projectSetup.outputPrefix' | translate }}
+            <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                  nz-tooltip [nzTooltipTitle]="'wizard.projectSetup.outputPrefixTooltip' | translate"></span>
+          </nz-form-label>
+          <nz-form-control [nzErrorTip]="'wizard.projectSetup.outputPrefixError' | translate">
+            <input nz-input formControlName="prefix" placeholder="sim" />
+          </nz-form-control>
+        </nz-form-item>
 
-      <nz-form-item>
-        <nz-form-label>Phases
-          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                nz-tooltip nzTooltipTitle="3-phase model: P1 = Solid (e.g. rocks/coarse debris), P2 = Fine-solid (e.g. fine debris/soil), P3 = Fluid (e.g. water/mud). Only 3-phase mode is supported in this version."></span>
-        </nz-form-label>
-        <nz-form-control>
-          <nz-tag nzColor="blue">3-phase: Solid / Fine-solid / Fluid</nz-tag>
-        </nz-form-control>
-      </nz-form-item>
-    </form>
+        <nz-form-item>
+          <nz-form-label nzRequired>{{ 'wizard.projectSetup.cellSize' | translate }}
+            <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                  nz-tooltip [nzTooltipTitle]="'wizard.projectSetup.cellSizeTooltip' | translate"></span>
+          </nz-form-label>
+          <nz-form-control [nzErrorTip]="'wizard.projectSetup.cellSizeError' | translate">
+            <nz-input-number formControlName="cellsize" [nzMin]="1" [nzStep]="1" style="width: 100%;"></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>{{ 'wizard.projectSetup.phases' | translate }}
+            <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                  nz-tooltip [nzTooltipTitle]="'wizard.projectSetup.phasesTooltip' | translate"></span>
+          </nz-form-label>
+          <nz-form-control>
+            <nz-tag nzColor="blue">{{ 'wizard.projectSetup.phasesTag' | translate }}</nz-tag>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </div>
 
     <!-- Step 1: Raster Files -->
-    <div *ngIf="currentStep === 1">
+    <div *ngIf="currentStep === 1" class="step-card">
+      <div class="step-card-header">
+        <h3>{{ 'wizard.rasterFiles.title' | translate }}</h3>
+        <p>{{ 'wizard.rasterFiles.subtitle' | translate }}</p>
+      </div>
+
       <div class="upload-area">
         <nz-upload
           [nzAction]="apiUrl + '/upload'"
@@ -60,309 +81,347 @@
           [nzData]="{ projectName: projectForm.value.name }"
           (nzChange)="handleUploadChange($event)">
           <button nz-button nzType="primary">
-            <span nz-icon nzType="upload"></span> Upload raster files
+            <span nz-icon nzType="upload"></span> {{ 'wizard.rasterFiles.uploadButton' | translate }}
           </button>
         </nz-upload>
+        <div class="upload-hint">{{ 'wizard.rasterFiles.uploadHint' | translate }}</div>
       </div>
 
       <form nz-form nzLayout="vertical" [formGroup]="rastersForm">
         <nz-form-item>
-          <nz-form-label nzRequired>Elevation (DEM)
+          <nz-form-label nzRequired>{{ 'wizard.rasterFiles.elevation' | translate }}
             <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                  nz-tooltip nzTooltipTitle="Input elevation raster map. In the release area, the elevation must represent the bottom of the flow mass (i.e. below the release material)."></span>
+                  nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.elevationTooltip' | translate"></span>
           </nz-form-label>
-          <nz-form-control nzErrorTip="Elevation raster is required">
-            <nz-select formControlName="elevation" nzPlaceHolder="Select elevation raster" nzAllowClear>
+          <nz-form-control [nzErrorTip]="'wizard.rasterFiles.elevationError' | translate">
+            <nz-select formControlName="elevation" [nzPlaceHolder]="'wizard.rasterFiles.selectElevation' | translate" nzAllowClear>
               <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
             </nz-select>
           </nz-form-control>
         </nz-form-item>
 
-        <div class="row">
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Release height P1
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of initial release height for P1 (solid phase, e.g. rocks/coarse debris). Defines the spatial distribution of the solid release mass."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hrelease1" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Release height P2
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of initial release height for P2 (fine-solid phase, e.g. fine debris, soil). Ignored for single-phase models."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hrelease2" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Release height P3
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of initial release height for P3 (fluid phase, e.g. water). Ignored for single-phase models."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hrelease3" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
+        <div class="section-title">{{ 'wizard.rasterFiles.releaseHeights' | translate }}</div>
+        <div class="form-grid cols-3">
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.releaseP1' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.releaseP1Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hrelease1" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.releaseP2' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.releaseP2Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hrelease2" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.releaseP3' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.releaseP3Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hrelease3" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
         </div>
 
-        <div class="row">
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Max entrainment P1
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of maximum entrainable height for P1 (solid phase). Defines the maximum depth of solid material that can be eroded from the bed."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hentrmax1" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Max entrainment P2
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of maximum entrainable height for P2 (fine-solid phase). Defines the maximum depth of fine material that can be eroded from the bed."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hentrmax2" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
-          <div class="col-4">
-            <nz-form-item>
-              <nz-form-label>Max entrainment P3
-                <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                      nz-tooltip nzTooltipTitle="Raster map of maximum entrainable height for P3 (fluid phase). Defines the maximum depth of fluid that can be entrained from the bed."></span>
-              </nz-form-label>
-              <nz-form-control>
-                <nz-select formControlName="hentrmax3" nzPlaceHolder="Select raster" nzAllowClear>
-                  <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
-                </nz-select>
-              </nz-form-control>
-            </nz-form-item>
-          </div>
+        <div class="section-title">{{ 'wizard.rasterFiles.maxEntrainment' | translate }}</div>
+        <div class="form-grid cols-3">
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.entrainmentP1' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.entrainmentP1Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hentrmax1" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.entrainmentP2' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.entrainmentP2Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hentrmax2" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.rasterFiles.entrainmentP3' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.entrainmentP3Tooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="hentrmax3" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
+                <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
         </div>
 
-        <nz-form-item>
-          <nz-form-label>Impact area (observed)
+        <nz-form-item style="margin-top: 16px;">
+          <nz-form-label>{{ 'wizard.rasterFiles.impactArea' | translate }}
             <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                  nz-tooltip nzTooltipTitle="Optional raster defining the observed impact area (positive values = impacted, 0 = not impacted). Used for model validation and performance evaluation."></span>
+                  nz-tooltip [nzTooltipTitle]="'wizard.rasterFiles.impactAreaTooltip' | translate"></span>
           </nz-form-label>
           <nz-form-control>
-            <nz-select formControlName="impactarea" nzPlaceHolder="Select raster" nzAllowClear>
+            <nz-select formControlName="impactarea" [nzPlaceHolder]="'wizard.rasterFiles.selectRaster' | translate" nzAllowClear>
               <nz-option *ngFor="let r of availableRasters" [nzValue]="r" [nzLabel]="r"></nz-option>
             </nz-select>
           </nz-form-control>
         </nz-form-item>
 
-        <div *ngIf="rastersForm.hasError('noHrelease') && rastersForm.touched" class="ant-form-item-explain-error">
-          At least one release height (P1, P2, or P3) must be selected.
+        <div *ngIf="rastersForm.hasError('noHrelease') && rastersForm.touched" class="validation-error">
+          {{ 'wizard.rasterFiles.validationError' | translate }}
         </div>
       </form>
     </div>
 
     <!-- Step 2: Material Properties -->
-    <form *ngIf="currentStep === 2" nz-form nzLayout="vertical" [formGroup]="materialsForm">
-      <h4>Density (kg/m³)
-        <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-              nz-tooltip nzTooltipTitle="Density of each phase in kg/m³. P1 (solid): grain density of granular material (e.g. 2600 for rock). P2 (fine-solid): e.g. 1300 for wet fine debris. P3 (fluid): e.g. 1000 for water."></span>
-      </h4>
-      <div class="row">
-        <div class="col-4" *ngFor="let i of [0,1,2]; let idx = index">
-          <nz-form-item>
-            <nz-form-label nzRequired>{{ ['P1 Solid','P2 Fine-solid','P3 Fluid'][idx] }}</nz-form-label>
-            <nz-form-control nzErrorTip="Required, min 1">
+    <div *ngIf="currentStep === 2" class="step-card">
+      <div class="step-card-header">
+        <h3>{{ 'wizard.materials.title' | translate }}</h3>
+        <p>{{ 'wizard.materials.subtitle' | translate }}</p>
+      </div>
+
+      <form nz-form nzLayout="vertical" [formGroup]="materialsForm">
+        <div class="section-title">
+          {{ 'wizard.materials.density' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.materials.densityTooltip' | translate"></span>
+        </div>
+        <div class="form-grid cols-3">
+          <nz-form-item *ngFor="let i of [0,1,2]; let idx = index">
+            <nz-form-label nzRequired>{{ phaseLabels[idx] | translate }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="'wizard.materials.densityError' | translate">
               <nz-input-number [formControlName]="'density' + i" [nzMin]="1" [nzStep]="100" style="width: 100%;"></nz-input-number>
             </nz-form-control>
           </nz-form-item>
         </div>
-      </div>
 
-      <h4>Friction
-        <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-              nz-tooltip nzTooltipTitle="Friction parameters for each phase. Internal: resistance within the flow mass (Mohr-Coulomb). Basal: resistance at the flow-bed interface. Fluid: turbulent friction number for the fluid component."></span>
-      </h4>
-      <nz-table [nzData]="['internal','basal','fluid']" [nzShowPagination]="false" nzSize="small" nzBordered>
-        <thead>
-          <tr>
-            <th></th>
-            <th>P1 Solid</th>
-            <th>P2 Fine-solid</th>
-            <th>P3 Fluid</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              Internal friction (deg)
-              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip nzTooltipTitle="Internal friction angle (°) of the material. Controls the internal shear resistance of the flow mass. Typically 25–40° for granular materials, 0° for fluids."></span>
-            </td>
-            <td><nz-input-number formControlName="friction0" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction1" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction2" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-          </tr>
-          <tr>
-            <td>
-              Basal friction (deg)
-              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip nzTooltipTitle="Basal friction angle (°) at the flow-bed interface. Controls the sliding resistance of the flow over the terrain. Typically lower than internal friction angle."></span>
-            </td>
-            <td><nz-input-number formControlName="friction3" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction4" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction5" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-          </tr>
-          <tr>
-            <td>
-              Fluid friction
-              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                    nz-tooltip nzTooltipTitle="Turbulent (fluid) friction number. Controls the turbulent resistance component. Higher values increase fluid resistance. Typically 3–10 for water-saturated flows."></span>
-            </td>
-            <td><nz-input-number formControlName="friction6" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction7" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-            <td><nz-input-number formControlName="friction8" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
-          </tr>
-        </tbody>
-      </nz-table>
+        <div class="section-title">
+          {{ 'wizard.materials.friction' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.materials.frictionTooltip' | translate"></span>
+        </div>
+        <div class="friction-table-wrap">
+          <nz-table [nzData]="['internal','basal','fluid']" [nzShowPagination]="false" nzSize="small" nzBordered>
+            <thead>
+              <tr>
+                <th></th>
+                <th>{{ 'wizard.materials.p1Solid' | translate }}</th>
+                <th>{{ 'wizard.materials.p2FineSolid' | translate }}</th>
+                <th>{{ 'wizard.materials.p3Fluid' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="friction-row-label">
+                    {{ 'wizard.materials.internalFriction' | translate }}
+                    <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                          nz-tooltip [nzTooltipTitle]="'wizard.materials.internalFrictionTooltip' | translate"></span>
+                  </span>
+                </td>
+                <td><nz-input-number formControlName="friction0" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction1" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction2" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="friction-row-label">
+                    {{ 'wizard.materials.basalFriction' | translate }}
+                    <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                          nz-tooltip [nzTooltipTitle]="'wizard.materials.basalFrictionTooltip' | translate"></span>
+                  </span>
+                </td>
+                <td><nz-input-number formControlName="friction3" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction4" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction5" [nzMin]="0" [nzMax]="90" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="friction-row-label">
+                    {{ 'wizard.materials.fluidFriction' | translate }}
+                    <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                          nz-tooltip [nzTooltipTitle]="'wizard.materials.fluidFrictionTooltip' | translate"></span>
+                  </span>
+                </td>
+                <td><nz-input-number formControlName="friction6" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction7" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+                <td><nz-input-number formControlName="friction8" [nzStep]="1" style="width: 100%;"></nz-input-number></td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
 
-      <h4 class="mt-3">Cohesion (N/m²)
-        <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-              nz-tooltip nzTooltipTitle="Cohesion (N/m²) of each phase. Represents the cohesive strength of the material independent of normal stress. Use 0 for non-cohesive granular materials such as dry sand or gravel."></span>
-      </h4>
-      <div class="row">
-        <div class="col-4" *ngFor="let i of [0,1,2]; let idx = index">
-          <nz-form-item>
-            <nz-form-label>{{ ['P1 Solid','P2 Fine-solid','P3 Fluid'][idx] }}</nz-form-label>
+        <div class="section-title">
+          {{ 'wizard.materials.cohesion' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.materials.cohesionTooltip' | translate"></span>
+        </div>
+        <div class="form-grid cols-3">
+          <nz-form-item *ngFor="let i of [0,1,2]; let idx = index">
+            <nz-form-label>{{ phaseLabels[idx] | translate }}</nz-form-label>
             <nz-form-control>
               <nz-input-number [formControlName]="'cohesion' + i" [nzMin]="0" [nzStep]="1" style="width: 100%;"></nz-input-number>
             </nz-form-control>
           </nz-form-item>
         </div>
-      </div>
 
-      <h4>Viscosity log₁₀(m²/s)
-        <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-              nz-tooltip nzTooltipTitle="Kinematic viscosity of each phase, given as log₁₀(m²/s). Used for viscous and slow-flow models. Typical values: water ≈ −6, lava ≈ 1–5. Use 0 to disable viscous effects."></span>
-      </h4>
-      <div class="row">
-        <div class="col-4" *ngFor="let i of [0,1,2]; let idx = index">
-          <nz-form-item>
-            <nz-form-label>{{ ['P1 Solid','P2 Fine-solid','P3 Fluid'][idx] }}</nz-form-label>
+        <div class="section-title">
+          {{ 'wizard.materials.viscosity' | translate }}
+          <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                nz-tooltip [nzTooltipTitle]="'wizard.materials.viscosityTooltip' | translate"></span>
+        </div>
+        <div class="form-grid cols-3">
+          <nz-form-item *ngFor="let i of [0,1,2]; let idx = index">
+            <nz-form-label>{{ phaseLabels[idx] | translate }}</nz-form-label>
             <nz-form-control>
               <nz-input-number [formControlName]="'viscosity' + i" [nzStep]="1" style="width: 100%;"></nz-input-number>
             </nz-form-control>
           </nz-form-item>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
     <!-- Step 3: Advanced -->
-    <form *ngIf="currentStep === 3" nz-form nzLayout="vertical" [formGroup]="advancedForm">
-      <nz-collapse>
-        <nz-collapse-panel nzHeader="Timing & Advanced" [nzActive]="true">
-          <div class="row">
-            <div class="col-6">
-              <nz-form-item>
-                <nz-form-label nzRequired>Output interval (s)
-                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                        nz-tooltip nzTooltipTitle="Time interval (seconds) between saved output snapshots. Smaller values produce more output files and increase disk usage."></span>
-                </nz-form-label>
-                <nz-form-control nzErrorTip="Required, min 1">
-                  <nz-input-number formControlName="tint" [nzMin]="1" [nzStep]="1" style="width: 100%;"></nz-input-number>
-                </nz-form-control>
-              </nz-form-item>
-            </div>
-            <div class="col-6">
-              <nz-form-item>
-                <nz-form-label nzRequired>Simulation end time (s)
-                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                        nz-tooltip nzTooltipTitle="Total simulation end time (seconds). Must be greater than the output interval."></span>
-                </nz-form-label>
-                <nz-form-control nzErrorTip="Required, min 1">
-                  <nz-input-number formControlName="tend" [nzMin]="1" [nzStep]="10" style="width: 100%;"></nz-input-number>
-                </nz-form-control>
-              </nz-form-item>
-            </div>
-          </div>
+    <div *ngIf="currentStep === 3" class="step-card">
+      <div class="step-card-header">
+        <h3>{{ 'wizard.advanced.title' | translate }}</h3>
+        <p>{{ 'wizard.advanced.subtitle' | translate }}</p>
+      </div>
 
-          <div *ngIf="advancedForm.hasError('tendNotGreater')" class="ant-form-item-explain-error mb-2">
-            End time must be greater than output interval.
-          </div>
+      <form nz-form nzLayout="vertical" [formGroup]="advancedForm">
+        <div class="form-grid cols-2">
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'wizard.advanced.outputInterval' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.advanced.outputIntervalTooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control [nzErrorTip]="'wizard.advanced.outputIntervalError' | translate">
+              <nz-input-number formControlName="tint" [nzMin]="1" [nzStep]="1" style="width: 100%;"></nz-input-number>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'wizard.advanced.endTime' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.advanced.endTimeTooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control [nzErrorTip]="'wizard.advanced.endTimeError' | translate">
+              <nz-input-number formControlName="tend" [nzMin]="1" [nzStep]="10" style="width: 100%;"></nz-input-number>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
 
-          <div class="row">
-            <div class="col-6">
-              <nz-form-item>
-                <nz-form-label>Entrainment coefficient
-                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                        nz-tooltip nzTooltipTitle="Empirical entrainment coefficient (0–1) controlling the rate at which basal material is eroded and incorporated into the flow. Higher values = more erosion. Leave empty to disable entrainment."></span>
-                </nz-form-label>
-                <nz-form-control nzErrorTip="Between 0 and 1">
-                  <nz-input-number formControlName="entrainment" [nzMin]="0" [nzMax]="1" [nzStep]="0.1" style="width: 100%;"></nz-input-number>
-                </nz-form-control>
-              </nz-form-item>
-            </div>
-            <div class="col-6">
-              <nz-form-item>
-                <nz-form-label>Stopping threshold
-                  <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
-                        nz-tooltip nzTooltipTitle="Threshold for the stopping criterion based on kinetic energy ratio. Flow cells with kinetic energy below this value are considered stopped. Leave empty to use default stopping behaviour."></span>
-                </nz-form-label>
-                <nz-form-control nzErrorTip="Must be >= 0">
-                  <nz-input-number formControlName="stopping" [nzMin]="0" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
-                </nz-form-control>
-              </nz-form-item>
-            </div>
-          </div>
-        </nz-collapse-panel>
-      </nz-collapse>
-    </form>
+        <div *ngIf="advancedForm.hasError('tendNotGreater')" class="validation-error" style="margin-bottom: 16px;">
+          {{ 'wizard.advanced.endTimeValidation' | translate }}
+        </div>
+
+        <div class="form-grid cols-2">
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.advanced.entrainmentCoeff' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.advanced.entrainmentCoeffTooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control [nzErrorTip]="'wizard.advanced.entrainmentCoeffError' | translate">
+              <nz-input-number formControlName="entrainment" [nzMin]="0" [nzMax]="1" [nzStep]="0.1" style="width: 100%;"></nz-input-number>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'wizard.advanced.stoppingThreshold' | translate }}
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
+                    nz-tooltip [nzTooltipTitle]="'wizard.advanced.stoppingThresholdTooltip' | translate"></span>
+            </nz-form-label>
+            <nz-form-control [nzErrorTip]="'wizard.advanced.stoppingThresholdError' | translate">
+              <nz-input-number formControlName="stopping" [nzMin]="0" [nzStep]="0.01" style="width: 100%;"></nz-input-number>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </form>
+    </div>
 
     <!-- Step 4: Review & Run -->
-    <div *ngIf="currentStep === 4">
-      <nz-descriptions nzTitle="Configuration Summary" nzBordered nzSize="small" [nzColumn]="2">
-        <nz-descriptions-item nzTitle="Project name">{{ projectForm.value.name }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Output prefix">{{ projectForm.value.prefix }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Cell size">{{ projectForm.value.cellsize }} m</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Phases">s,fs,f (3-phase)</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Elevation">{{ rastersForm.value.elevation }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Release P1">{{ rastersForm.value.hrelease1 || '-' }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Release P2">{{ rastersForm.value.hrelease2 || '-' }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Release P3">{{ rastersForm.value.hrelease3 || '-' }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Density">{{ materialsForm.value.density0 }}, {{ materialsForm.value.density1 }}, {{ materialsForm.value.density2 }}</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="Output interval">{{ advancedForm.value.tint }} s</nz-descriptions-item>
-        <nz-descriptions-item nzTitle="End time">{{ advancedForm.value.tend }} s</nz-descriptions-item>
-      </nz-descriptions>
+    <div *ngIf="currentStep === 4" class="step-card">
+      <div class="step-card-header">
+        <h3>{{ 'wizard.review.title' | translate }}</h3>
+        <p>{{ 'wizard.review.subtitle' | translate }}</p>
+      </div>
 
-      <h4 class="mt-3">Generated script</h4>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.projectName' | translate }}</div>
+          <div class="summary-value">{{ projectForm.value.name }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.outputPrefix' | translate }}</div>
+          <div class="summary-value">{{ projectForm.value.prefix }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.cellSize' | translate }}</div>
+          <div class="summary-value">{{ projectForm.value.cellsize }} m</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.phases' | translate }}</div>
+          <div class="summary-value">s,fs,f (3-phase)</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.elevation' | translate }}</div>
+          <div class="summary-value">{{ rastersForm.value.elevation }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.releaseP1' | translate }}</div>
+          <div class="summary-value">{{ rastersForm.value.hrelease1 || '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.releaseP2' | translate }}</div>
+          <div class="summary-value">{{ rastersForm.value.hrelease2 || '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.releaseP3' | translate }}</div>
+          <div class="summary-value">{{ rastersForm.value.hrelease3 || '-' }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.density' | translate }}</div>
+          <div class="summary-value">{{ materialsForm.value.density0 }}, {{ materialsForm.value.density1 }}, {{ materialsForm.value.density2 }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.outputInterval' | translate }}</div>
+          <div class="summary-value">{{ advancedForm.value.tint }} s</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">{{ 'wizard.review.endTime' | translate }}</div>
+          <div class="summary-value">{{ advancedForm.value.tend }} s</div>
+        </div>
+      </div>
+
+      <div class="review-section-title">{{ 'wizard.review.generatedScript' | translate }}</div>
       <pre class="script-preview"><code>{{ generateScriptPreview(buildConfig()) }}</code></pre>
     </div>
   </div>
 
   <div class="steps-action">
-    <button nz-button nzType="default" *ngIf="currentStep > 0" (click)="prev()">Back</button>
-    <button nz-button nzType="primary" *ngIf="currentStep < 4" [disabled]="!isCurrentStepValid" (click)="next()">Next</button>
+    <button nz-button nzType="default" *ngIf="currentStep > 0" (click)="prev()" class="btn btn-outline">{{ 'wizard.buttons.back' | translate }}</button>
+    <span class="spacer"></span>
+    <button nz-button nzType="primary" *ngIf="currentStep < 4" [disabled]="!isCurrentStepValid" (click)="next()" class="btn btn-primary">{{ 'wizard.buttons.next' | translate }}</button>
     <ng-container *ngIf="currentStep === 4">
-      <button nz-button nzType="default" (click)="saveOnly()" [disabled]="!allFormsValid">Save only</button>
-      <button nz-button nzType="primary" (click)="saveAndRun()" [disabled]="!allFormsValid">Save & Run</button>
+      <button nz-button nzType="default" (click)="saveOnly()" [disabled]="!allFormsValid" class="btn btn-outline">{{ 'wizard.buttons.saveOnly' | translate }}</button>
+      <button nz-button nzType="primary" (click)="saveAndRun()" [disabled]="!allFormsValid" class="btn btn-primary">{{ 'wizard.buttons.saveAndRun' | translate }}</button>
     </ng-container>
   </div>
 </div>

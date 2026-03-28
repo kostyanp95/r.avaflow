@@ -21,6 +21,20 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
   currentStep = 0;
   availableRasters: string[] = [];
 
+  stepKeys = [
+    'wizard.steps.projectSetup',
+    'wizard.steps.rasterFiles',
+    'wizard.steps.materials',
+    'wizard.steps.advanced',
+    'wizard.steps.reviewRun'
+  ];
+
+  phaseLabels = [
+    'wizard.materials.p1Solid',
+    'wizard.materials.p2FineSolid',
+    'wizard.materials.p3Fluid'
+  ];
+
   projectForm: FormGroup;
   rastersForm: FormGroup;
   materialsForm: FormGroup;

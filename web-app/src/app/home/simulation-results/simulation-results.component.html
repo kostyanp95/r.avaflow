@@ -1,32 +1,70 @@
 <ng-container *ngIf="!projectName">
-  <p>No project selected</p>
+  <div class="no-project">
+    <span class="no-project-icon" nz-icon nzType="folder-open" nzTheme="outline"></span>
+    <span class="no-project-text">{{ 'results.noProject' | translate }}</span>
+  </div>
 </ng-container>
 
 <ng-container *ngIf="projectName">
-  <div *ngIf="exitStatus" class="exit-status">
-    <nz-badge [nzStatus]="exitStatus === 'Success' ? 'success' : 'error'" [nzText]="'Exit: ' + exitStatus"></nz-badge>
+  <div class="results-container">
+    <!-- Exit status badge -->
+    <div *ngIf="exitStatus" class="exit-status-bar">
+      <span class="exit-badge"
+            [class.exit-success]="exitStatus === 'Success'"
+            [class.exit-error]="exitStatus !== 'Success'">
+        <span class="exit-icon" nz-icon
+              [nzType]="exitStatus === 'Success' ? 'check-circle' : 'close-circle'"
+              nzTheme="fill"></span>
+        {{ exitStatus === 'Success' ? ('results.exitSuccess' | translate) : exitStatus }}
+      </span>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading" class="loading-state">
+      <span class="loading-spinner" nz-icon nzType="loading" nzTheme="outline"></span>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="files.length === 0 && !loading" class="empty-state">
+      <span class="empty-icon" nz-icon nzType="inbox" nzTheme="outline"></span>
+      <span class="empty-title">{{ 'results.noFiles' | translate }}</span>
+      <span class="empty-description">{{ 'results.noFilesHint' | translate }}</span>
+    </div>
+
+    <!-- File table -->
+    <ng-container *ngIf="files.length > 0 && !loading">
+      <div class="results-header">
+        <h3>{{ 'results.outputFiles' | translate }}</h3>
+        <span class="file-count">{{ files.length }} {{ 'results.files' | translate }}</span>
+      </div>
+
+      <div class="files-table-wrap">
+        <nz-table [nzData]="files" [nzShowPagination]="false" nzSize="small" nzBordered>
+          <thead>
+            <tr>
+              <th>{{ 'results.filename' | translate }}</th>
+              <th nzWidth="120px">{{ 'results.type' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let file of files">
+              <td><span class="filename-cell">{{ file.filename }}</span></td>
+              <td>
+                <span class="file-type-tag"
+                      [class.type-raster]="file.type === 'raster'"
+                      [class.type-csv]="file.type === 'csv'"
+                      [class.type-image]="file.type === 'image'"
+                      [class.type-script]="file.type === 'script'"
+                      [class.type-json]="file.type === 'json'"
+                      [class.type-text]="file.type === 'text'"
+                      [class.type-other]="file.type === 'other'">
+                  {{ file.type }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </div>
+    </ng-container>
   </div>
-
-  <ng-container *ngIf="files.length === 0 && !loading">
-    <p>No results yet</p>
-  </ng-container>
-
-  <nz-table *ngIf="files.length > 0" [nzData]="files" [nzShowPagination]="false" nzSize="small" nzBordered [nzLoading]="loading">
-    <thead>
-      <tr>
-        <th>Filename</th>
-        <th>Type</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let file of files">
-        <td>{{ file.filename }}</td>
-        <td>
-          <nz-tag [nzColor]="file.type === 'raster' ? 'green' : file.type === 'csv' ? 'blue' : file.type === 'script' ? 'orange' : 'default'">
-            {{ file.type }}
-          </nz-tag>
-        </td>
-      </tr>
-    </tbody>
-  </nz-table>
 </ng-container>

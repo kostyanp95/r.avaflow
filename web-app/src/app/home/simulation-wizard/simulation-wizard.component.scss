@@ -1,51 +1,548 @@
+// ── SimulationWizard: modern card-based stepped form ──
+
+:host {
+  display: block;
+  height: 100%;
+}
+
 .wizard-container {
-  padding: 16px 24px 16px 0;
+  padding: 24px 24px 16px 0;
   display: flex;
   flex-direction: column;
   height: 100%;
+  font-family: var(--font-family);
 }
+
+// ── Custom stepper ──
+
+.wizard-stepper {
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 0;
+  margin-bottom: 8px;
+  gap: 0;
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+
+  &:last-child .step-connector {
+    display: none;
+  }
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.step-circle {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  transition: all var(--transition-normal) ease;
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color var(--transition-normal) ease;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  margin: 0 12px;
+  border-radius: 1px;
+  transition: background var(--transition-normal) ease;
+}
+
+// Active step
+.wizard-step.active {
+  .step-circle {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--text-inverse);
+    box-shadow: 0 0 0 4px var(--accent-primary-light);
+  }
+
+  .step-label {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}
+
+// Completed step
+.wizard-step.completed {
+  .step-circle {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--text-inverse);
+  }
+
+  .step-label {
+    color: var(--text-secondary);
+  }
+
+  .step-connector {
+    background: var(--accent-primary);
+  }
+}
+
+// ── Steps content ──
 
 .steps-content {
   flex: 1;
   margin-top: 24px;
-  padding: 24px;
   overflow-y: auto;
+  padding-right: 4px;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--border-color-strong);
+  }
 }
 
-.steps-action {
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+// ── Step card wrapper ──
+
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-xs);
 }
+
+.step-card-header {
+  margin-bottom: 20px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+}
+
+// ── Section headers inside steps ──
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 24px 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+// ── Form styling overrides ──
+
+::ng-deep {
+  // Input fields
+  .ant-input,
+  .ant-input-number,
+  .ant-select-selector {
+    background: var(--bg-input) !important;
+    border-color: var(--border-color) !important;
+    border-radius: var(--border-radius-sm) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    transition: border-color var(--transition-fast) ease,
+                box-shadow var(--transition-fast) ease !important;
+
+    &:hover {
+      border-color: var(--border-color-strong) !important;
+    }
+
+    &:focus,
+    &.ant-input-focused {
+      border-color: var(--accent-primary) !important;
+      box-shadow: 0 0 0 3px var(--accent-primary-light) !important;
+    }
+  }
+
+  .ant-select-focused .ant-select-selector {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px var(--accent-primary-light) !important;
+  }
+
+  // Input number full width
+  .ant-input-number {
+    width: 100% !important;
+  }
+
+  // Form labels
+  .ant-form-item-label > label {
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+  }
+
+  .ant-form-item-required::before {
+    color: var(--accent-danger) !important;
+  }
+
+  // Form helper text
+  .ant-form-item-extra {
+    color: var(--text-muted) !important;
+    font-size: 12px !important;
+    margin-top: 4px;
+  }
+
+  // Tags
+  .ant-tag {
+    border-radius: var(--border-radius-sm) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    padding: 2px 10px !important;
+  }
+
+  // Collapse panel (Advanced step)
+  .ant-collapse {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    border-radius: var(--border-radius) !important;
+  }
+
+  .ant-collapse-header {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+  }
+
+  .ant-collapse-content {
+    background: var(--bg-card) !important;
+    border-top-color: var(--border-color) !important;
+  }
+
+  // Descriptions (Review step)
+  .ant-descriptions-bordered {
+    .ant-descriptions-view {
+      border-color: var(--border-color) !important;
+      border-radius: var(--border-radius) !important;
+      overflow: hidden;
+    }
+
+    .ant-descriptions-item-label {
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      border-color: var(--border-color) !important;
+    }
+
+    .ant-descriptions-item-content {
+      color: var(--text-primary) !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      border-color: var(--border-color) !important;
+      background: var(--bg-card) !important;
+    }
+  }
+
+  .ant-descriptions-header {
+    margin-bottom: 16px !important;
+  }
+
+  .ant-descriptions-title {
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+}
+
+// ── Upload area ──
 
 .upload-area {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 24px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-secondary);
+  text-align: center;
+  transition: border-color var(--transition-fast) ease,
+              background var(--transition-fast) ease;
+
+  &:hover {
+    border-color: var(--accent-primary);
+    background: var(--accent-primary-light);
+  }
 }
 
-.script-preview {
-  background: #f5f5f5;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  padding: 16px;
+.upload-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+// ── Friction table ──
+
+.friction-table-wrap {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  margin-bottom: 8px;
+
+  ::ng-deep {
+    .ant-table {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    .ant-table-thead > tr > th {
+      background: var(--bg-secondary) !important;
+      color: var(--text-secondary) !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      border-color: var(--border-color) !important;
+      padding: 10px 12px !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-color: var(--border-color) !important;
+      padding: 8px 12px !important;
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+      font-size: 13px !important;
+    }
+
+    .ant-table-tbody > tr:nth-child(even) > td {
+      background: var(--bg-secondary) !important;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: var(--accent-primary-light) !important;
+    }
+
+    // Remove default bordered style
+    .ant-table-bordered {
+      .ant-table-container {
+        border: none !important;
+      }
+    }
+
+    .ant-table-cell {
+      border-color: var(--border-color) !important;
+    }
+  }
+}
+
+.friction-row-label {
   font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// ── Script preview ──
+
+.script-preview {
+  background: var(--bg-terminal);
+  color: var(--text-terminal);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-all;
+  margin: 0;
+
+  code {
+    font-family: var(--font-mono);
+    color: var(--text-terminal);
+  }
 }
 
-h4 {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  color: rgba(0, 0, 0, 0.85);
-}
+// ── Helper text for info icons ──
 
 .field-info {
   margin-left: 4px;
-  color: #aaa;
+  color: var(--text-muted);
   cursor: help;
   font-size: 13px;
   vertical-align: middle;
+  transition: color var(--transition-fast) ease;
 
   &:hover {
-    color: #1890ff;
+    color: var(--accent-primary);
+  }
+}
+
+// ── Validation error ──
+
+.validation-error {
+  color: var(--accent-danger);
+  font-size: 13px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--accent-danger-light);
+  border-radius: var(--border-radius-sm);
+}
+
+// ── Steps action bar ──
+
+.steps-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  border: 1px solid transparent;
+  line-height: 1.5;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-color: var(--accent-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-primary-hover);
+    border-color: var(--accent-primary-hover);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-color-strong);
+    background: var(--bg-secondary);
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+// ── Review summary grid ──
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+
+  .summary-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.review-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 24px 0 12px 0;
+}
+
+// ── Row/column overrides for consistent spacing ──
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+
+  &.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  &.cols-2 {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

@@ -5,9 +5,11 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { NO_ERRORS_SCHEMA, Component, Input, EventEmitter, Output } from '@angular/core';
 
 import { NzMessageModule, NzMessageService } from 'ng-zorro-antd/message';
+import { TranslateModule } from '@ngx-translate/core';
 
-import { HomeComponent, ProjectSummary } from './home.component';
+import { HomeComponent, ProjectSummary, InfoPage } from './home.component';
 import { WebSocketService } from '../web-socket.service';
+import { ThemeService } from '../core/services/theme.service';
 import { APP_CONFIG } from '../../environments/environment';
 
 // Stub child components to isolate HomeComponent
@@ -36,6 +38,14 @@ class MockWebSocketService {
   webSocketConnect() { return new Subject(); }
 }
 
+class MockThemeService {
+  isDark = false;
+  currentTheme = 'light' as const;
+  theme$ = new Subject();
+  toggleTheme() { this.isDark = !this.isDark; }
+  setTheme(_theme: string) {}
+}
+
 describe('HomeComponent', () => {
   let component: HomeComponent;
   let fixture: ComponentFixture<HomeComponent>;
@@ -52,10 +62,12 @@ describe('HomeComponent', () => {
       imports: [
         HttpClientTestingModule,
         NoopAnimationsModule,
-        NzMessageModule
+        NzMessageModule,
+        TranslateModule.forRoot()
       ],
       providers: [
         { provide: WebSocketService, useClass: MockWebSocketService },
+        { provide: ThemeService, useClass: MockThemeService },
         NzMessageService
       ],
       schemas: [NO_ERRORS_SCHEMA]
@@ -152,6 +164,60 @@ describe('HomeComponent', () => {
       req.flush({});
 
       expect(component.selectedTabIndex).toBe(1);
+    });
+  });
+
+  describe('toggleTheme', () => {
+    it('should delegate to ThemeService', () => {
+      fixture.detectChanges();
+      httpMock.expectOne(`${APP_CONFIG.apiUrl}/projects`).flush([]);
+
+      const themeService = TestBed.inject(ThemeService);
+      spyOn(themeService, 'toggleTheme');
+      component.toggleTheme();
+      expect(themeService.toggleTheme).toHaveBeenCalled();
+    });
+  });
+
+  describe('info pages', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      httpMock.expectOne(`${APP_CONFIG.apiUrl}/projects`).flush([]);
+    });
+
+    it('should start with no info page open', () => {
+      expect(component.infoPage).toBeNull();
+    });
+
+    it('should open about-avaflow info page', () => {
+      component.showInfoPage('about-avaflow');
+      expect(component.infoPage).toBe('about-avaflow');
+    });
+
+    it('should open about-app info page', () => {
+      component.showInfoPage('about-app');
+      expect(component.infoPage).toBe('about-app');
+    });
+
+    it('should open help info page', () => {
+      component.showInfoPage('help');
+      expect(component.infoPage).toBe('help');
+    });
+
+    it('should close info page', () => {
+      component.showInfoPage('about-avaflow');
+      expect(component.infoPage).toBe('about-avaflow');
+
+      component.closeInfoPage();
+      expect(component.infoPage).toBeNull();
+    });
+
+    it('should switch between info pages', () => {
+      component.showInfoPage('about-avaflow');
+      expect(component.infoPage).toBe('about-avaflow');
+
+      component.showInfoPage('help');
+      expect(component.infoPage).toBe('help');
     });
   });
 });

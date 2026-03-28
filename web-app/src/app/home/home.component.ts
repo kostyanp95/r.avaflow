@@ -1,8 +1,12 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { TranslateService } from '@ngx-translate/core';
 import { SimulationWizardComponent } from './simulation-wizard/simulation-wizard.component';
 import { APP_CONFIG } from '../../environments/environment';
+import { ThemeService } from '../core/services/theme.service';
+
+export type InfoPage = 'about-avaflow' | 'about-app' | 'help' | null;
 
 export interface ProjectSummary {
   name: string;
@@ -20,10 +24,38 @@ export class HomeComponent implements OnInit {
   selectedTabIndex = 0;
   projects: ProjectSummary[] = [];
   activeProjectName = '';
+  projectsExpanded = true;
+  infoExpanded = false;
+  infoPage: InfoPage = null;
+
+  tabLabelKeys = ['tabs.parameters', 'tabs.modeling', 'tabs.results'];
+  tabIcons = ['setting', 'experiment', 'bar-chart'];
 
   @ViewChild(SimulationWizardComponent) wizard?: SimulationWizardComponent;
 
-  constructor(private http: HttpClient, private message: NzMessageService) {}
+  currentLang = 'en';
+
+  constructor(
+    private http: HttpClient,
+    private message: NzMessageService,
+    private themeService: ThemeService,
+    private translate: TranslateService
+  ) {
+    this.currentLang = this.translate.currentLang || this.translate.defaultLang || 'en';
+  }
+
+  get isDark(): boolean {
+    return this.themeService.isDark;
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
+
+  switchLanguage(lang: string): void {
+    this.translate.use(lang);
+    this.currentLang = lang;
+  }
 
   ngOnInit(): void {
     this.loadProjects();
@@ -60,8 +92,8 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  deleteProject(name: string, event: MouseEvent): void {
-    event.stopPropagation();
+  deleteProject(name: string, event?: MouseEvent): void {
+    event?.stopPropagation();
     this.http.delete(`${APP_CONFIG.apiUrl}/project/${name}`)
       .subscribe({
         next: () => {
@@ -96,5 +128,13 @@ export class HomeComponent implements OnInit {
   onProjectSaved(name: string): void {
     this.activeProjectName = name;
     this.loadProjects();
+  }
+
+  showInfoPage(page: InfoPage): void {
+    this.infoPage = page;
+  }
+
+  closeInfoPage(): void {
+    this.infoPage = null;
   }
 }

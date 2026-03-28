@@ -80,6 +80,15 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
     }
   }
 
+  get statusTranslateKey(): string {
+    switch (this.status) {
+      case 'idle': return 'modeling.idle';
+      case 'running': return 'modeling.running';
+      case 'done': return 'modeling.done';
+      case 'error': return 'modeling.error';
+    }
+  }
+
   runSimulation(): void {
     if (!this.projectName || this.isRunning) return;
     this.http.post<{ success: boolean; message: string }>(`${APP_CONFIG.apiUrl}/run`, { projectName: this.projectName })
