@@ -1,0 +1,53 @@
+# K3s ExternalService manifests for r.avaflow on RGT-PC Docker host
+# Apply: kubectl apply -f k3s-external-service.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avaflow-classic
+  namespace: default
+  labels:
+    app: avaflow-classic
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: avaflow-classic
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 10.3.0.23  # RGT-PC wg1 IP
+    ports:
+      - name: http
+        port: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: avaflow-40g
+  namespace: default
+  labels:
+    app: avaflow-40g
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3002
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: avaflow-40g
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 10.3.0.23  # RGT-PC wg1 IP
+    ports:
+      - name: http
+        port: 3002
