@@ -61,7 +61,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       prefix: [D.prefix, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/), Validators.maxLength(20)]],
       cellsize: [D.cellsize, [Validators.required, Validators.min(1)]],
       phases: [D.phases],
-      ctopo: [D.ctopo],
+      ctopo: [D.ctopo === 1],
       limiter: [D.limiter],
       gravity: [D.gravity, [Validators.required, Validators.min(0)]],
       cores: [D.cores, [Validators.required, Validators.min(1)]],
@@ -124,8 +124,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       deformation0: [D.deformation[0], [Validators.min(0), Validators.max(1)]],
       deformation1: [D.deformation[1], [Validators.min(0), Validators.max(1)]],
       deformation2: [D.deformation[2], [Validators.min(0), Validators.max(1)]],
-      clayers: [0],
-      cdispersion: [0],
+      clayers: [false],
+      cdispersion: [false],
       csurface: [0],
       // Inter-phase interactions (collapsible, multi-phase only)
       drag0: [D.drag[0]], drag1: [D.drag[1]], drag2: [D.drag[2]],
@@ -152,7 +152,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
 
     // Step 3: Entrainment, Stopping & Phase Transformation
     this.entrainmentForm = this.fb.group({
-      centrainment: [0],
+      centrainment: [false],
       entrainment_coeff: [D.entrainment_coeff, [Validators.max(0)]],
       stopping_threshold: [D.stopping_threshold, [Validators.min(0)]],
       hentrmax1: [null],
@@ -164,7 +164,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       cstopping: [0],
       tstop: [null],
       // Phase transformation (multi-phase only)
-      cmelt: [0],
+      cmelt: [false],
       transformation0: [0], transformation1: [0], transformation2: [0],
       melting0: [0], melting1: [0], melting2: [0], melting3: [0.2], melting4: [0.5],
       ctrans12: [null], ctrans13: [null], ctrans23: [null],
@@ -239,7 +239,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
   }
 
   get isEntrainmentActive(): boolean {
-    return this.entrainmentForm.value.centrainment === 1;
+    return this.entrainmentForm.value.centrainment === true;
   }
 
   get isStoppingActive(): boolean {
@@ -247,7 +247,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
   }
 
   get isMeltActive(): boolean {
-    return this.entrainmentForm.value.cmelt === 1;
+    return this.entrainmentForm.value.cmelt === true;
   }
 
   get isMultipleRuns(): boolean {
@@ -291,6 +291,12 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     return this.currentFormGroup.valid;
   }
 
+  goToStep(step: number): void {
+    if (step >= 0 && step <= 6) {
+      this.currentStep = step;
+    }
+  }
+
   next(): void {
     if (this.currentStep < 6) {
       this.currentStep++;
@@ -325,7 +331,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     const params: any = {
       cellsize: s.cellsize,
       phases: s.phases,
-      ctopo: s.ctopo,
+      ctopo: s.ctopo ? 1 : 0,
       limiter: s.limiter,
       gravity: s.gravity,
       cores: s.cores,
@@ -351,8 +357,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       cohesion: [m.cohesion0, m.cohesion1, m.cohesion2],
       viscosity: [m.viscosity0, m.viscosity1, m.viscosity2],
       deformation: [m.deformation0, m.deformation1, m.deformation2],
-      clayers: m.clayers,
-      cdispersion: m.cdispersion,
+      clayers: m.clayers ? 1 : 0,
+      cdispersion: m.cdispersion ? 1 : 0,
       csurface: m.csurface,
       drag: mp ? [m.drag0, m.drag1, m.drag2, m.drag3, m.drag4, m.drag5] : null,
       virtualmass: mp ? [m.vm0, m.vm1, m.vm2] : null,
@@ -360,7 +366,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       shearing: m.shearing,
       fragmentation: [m.fragmentation0, m.fragmentation1],
       ambient: m.ambient,
-      centrainment: e.centrainment,
+      centrainment: e.centrainment ? 1 : 0,
       cstopping: e.cstopping,
       entrainment: [e.entrainment_coeff, e.stopping_threshold],
       hentrmax1: e.hentrmax1 || null,
@@ -370,9 +376,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       vhentrmax: e.vhentrmax || null,
       centr: e.centr || null,
       tstop: e.tstop || null,
-      cmelt: mp ? e.cmelt : 0,
+      cmelt: mp ? (e.cmelt ? 1 : 0) : 0,
       transformation: mp ? [e.transformation0, e.transformation1, e.transformation2] : null,
-      melting: (mp && e.cmelt === 1) ? [e.melting0, e.melting1, e.melting2, e.melting3, e.melting4] : null,
+      melting: (mp && e.cmelt) ? [e.melting0, e.melting1, e.melting2, e.melting3, e.melting4] : null,
       ctrans12: mp ? (e.ctrans12 || null) : null,
       ctrans13: mp ? (e.ctrans13 || null) : null,
       ctrans23: mp ? (e.ctrans23 || null) : null,
@@ -651,7 +657,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     this.availableRasters = [];
     this.setupForm.reset({
       name: '', prefix: D.prefix, cellsize: D.cellsize, phases: D.phases,
-      ctopo: D.ctopo, limiter: D.limiter, gravity: D.gravity, cores: D.cores,
+      ctopo: D.ctopo === 1, limiter: D.limiter, gravity: D.gravity, cores: D.cores,
       threshold1: D.thresholds[0], threshold2: D.thresholds[1], threshold3: D.thresholds[2],
       threshold4: D.thresholds[3], threshold5: D.thresholds[4],
       cfl_number: D.cfl[0], cfl_timestep: D.cfl[1],
@@ -668,7 +674,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       cohesion0: 0, cohesion1: 0, cohesion2: 0,
       viscosity0: 0, viscosity1: 0, viscosity2: 0,
       deformation0: D.deformation[0], deformation1: D.deformation[1], deformation2: D.deformation[2],
-      clayers: 0, cdispersion: 0, csurface: 0,
+      clayers: false, cdispersion: false, csurface: 0,
       drag0: D.drag[0], drag1: D.drag[1], drag2: D.drag[2],
       drag3: D.drag[3], drag4: D.drag[4], drag5: D.drag[5],
       vm0: D.virtualmass[0], vm1: D.virtualmass[1], vm2: D.virtualmass[2],
@@ -676,8 +682,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       shearing: 0, fragmentation0: 0, fragmentation1: 0, ambient: 0,
     });
     this.entrainmentForm.reset({
-      centrainment: 0, entrainment_coeff: D.entrainment_coeff, stopping_threshold: D.stopping_threshold,
-      cstopping: 0, cmelt: 0,
+      centrainment: false, entrainment_coeff: D.entrainment_coeff, stopping_threshold: D.stopping_threshold,
+      cstopping: 0, cmelt: false,
       transformation0: 0, transformation1: 0, transformation2: 0,
       melting0: 0, melting1: 0, melting2: 0, melting3: 0.2, melting4: 0.5,
     });
@@ -725,7 +731,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       prefix: project.experiments[0].name,
       cellsize: p.cellsize ?? DEFAULTS.cellsize,
       phases: phases,
-      ctopo: p.ctopo ?? 0,
+      ctopo: (p.ctopo ?? 0) === 1,
       limiter: p.limiter ?? 1,
       gravity: p.gravity ?? 9.81,
       cores: p.cores ?? 8,
@@ -768,7 +774,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       cohesion0: cohesion[0], cohesion1: cohesion[1], cohesion2: cohesion[2],
       viscosity0: viscosity[0], viscosity1: viscosity[1], viscosity2: viscosity[2],
       deformation0: p.deformation?.[0] ?? 1.0, deformation1: p.deformation?.[1] ?? 1.0, deformation2: p.deformation?.[2] ?? 1.0,
-      clayers: p.clayers ?? 0, cdispersion: p.cdispersion ?? 0, csurface: p.csurface ?? 0,
+      clayers: (p.clayers ?? 0) === 1, cdispersion: (p.cdispersion ?? 0) === 1, csurface: p.csurface ?? 0,
       drag0: p.drag?.[0] ?? DEFAULTS.drag[0], drag1: p.drag?.[1] ?? DEFAULTS.drag[1], drag2: p.drag?.[2] ?? DEFAULTS.drag[2],
       drag3: p.drag?.[3] ?? DEFAULTS.drag[3], drag4: p.drag?.[4] ?? DEFAULTS.drag[4], drag5: p.drag?.[5] ?? DEFAULTS.drag[5],
       vm0: p.virtualmass?.[0] ?? DEFAULTS.virtualmass[0], vm1: p.virtualmass?.[1] ?? DEFAULTS.virtualmass[1], vm2: p.virtualmass?.[2] ?? DEFAULTS.virtualmass[2],
@@ -786,7 +792,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     this.materialsForm.patchValue(spatialPatch);
 
     this.entrainmentForm.patchValue({
-      centrainment: p.centrainment ?? 0,
+      centrainment: (p.centrainment ?? 0) === 1,
       entrainment_coeff: p.entrainment?.[0] ?? DEFAULTS.entrainment_coeff,
       stopping_threshold: p.entrainment?.[1] ?? 0,
       hentrmax1: p.hentrmax1 || null, hentrmax2: p.hentrmax2 || null, hentrmax3: p.hentrmax3 || null,
@@ -795,7 +801,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       centr: p.centr || null,
       cstopping: p.cstopping ?? 0,
       tstop: p.tstop || null,
-      cmelt: p.cmelt ?? 0,
+      cmelt: (p.cmelt ?? 0) === 1,
       transformation0: p.transformation?.[0] ?? 0, transformation1: p.transformation?.[1] ?? 0, transformation2: p.transformation?.[2] ?? 0,
       melting0: p.melting?.[0] ?? 0, melting1: p.melting?.[1] ?? 0, melting2: p.melting?.[2] ?? 0,
       melting3: p.melting?.[3] ?? 0.2, melting4: p.melting?.[4] ?? 0.5,

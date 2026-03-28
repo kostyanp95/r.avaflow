@@ -74,7 +74,20 @@
       "aoiNorth": "North",
       "aoiSouth": "South",
       "aoiWest": "West",
-      "aoiEast": "East"
+      "aoiEast": "East",
+      "threshDisplayTooltip": "Minimum flow height threshold for display and simulation output (metres). Cells with flow height below this value are not shown.",
+      "threshKETooltip": "Kinetic energy threshold (J). Used for output filtering of kinetic energy maps.",
+      "threshPressureTooltip": "Pressure threshold (Pa). Used for output filtering of pressure maps.",
+      "threshHeightTooltip": "Threshold for flow height change detection (metres). Controls sensitivity to height variations.",
+      "threshVelocityTooltip": "Velocity threshold (m/s). Minimum velocity for active flow computation.",
+      "cflNumberTooltip": "Courant-Friedrichs-Lewy number controlling adaptive time step. Lower values increase stability but slow computation. Max 0.5.",
+      "cflTimestepTooltip": "Fixed alternative timestep in seconds. Overrides CFL-based adaptive timestep when set to > 0.",
+      "slomoTimeTooltip": "Time scaling factor. Values < 1 slow down the simulation, values > 1 speed it up. Default 1.0.",
+      "slomoViscosityTooltip": "Viscosity scaling controller. Modifies effective viscosity for numerical stability. Default 1.0.",
+      "slomoFluxTooltip": "Flux scaling controller. Modifies mass flux rates for numerical stability. Default 1.0.",
+      "flagMTooltip": "Enable Monte Carlo multiple model runs with parameter sampling for uncertainty analysis.",
+      "samplingTooltip": "Number of random parameter samples for multiple model runs. Higher values give better statistics but take longer.",
+      "aoiTooltip": "Area of interest coordinates (N/S/W/E) to restrict computation domain. Leave empty to use full DEM extent."
     },
     "step1": {
       "title": "Terrain & Release",
@@ -107,6 +120,12 @@
       "hydrograph": "Hydrograph file",
       "hydrographPlaceholder": "path/to/hydrograph.txt",
       "hydrocoords": "Hydrograph coordinates",
+      "hreleaseTooltip": "Raster map defining initial release height (metres) for this phase. Non-zero cells define the release area.",
+      "treleaseTooltip": "Raster map defining time delay (seconds) before release starts at each cell.",
+      "trelstopTooltip": "Raster map defining time (seconds) when release stops at each cell.",
+      "velocityTooltip": "Raster map of initial velocity component (m/s) for this phase. X = east-west, Y = north-south.",
+      "hydrographTooltip": "Path to text file with time-varying inflow hydrograph (time, discharge pairs).",
+      "hydrocoordsTooltip": "Coordinates of hydrograph input location: x, y, cross-section length, flow direction (degrees).",
       "validationError": "At least one release height (P1, P2, or P3) must be selected."
     },
     "step2": {
@@ -149,7 +168,17 @@
       "spatialOverrides": "Spatial Parameter Map Overrides",
       "frictionRasters": "Friction Rasters (phi, delta, addfri)",
       "otherRasters": "Cohesion, Viscosity & Other Rasters",
-      "frictiograph": "Time-varying friction file"
+      "frictiograph": "Time-varying friction file",
+      "cohesionTooltip": "Cohesive strength per phase (N/m\u00b2). Resistance independent of normal stress. Use 0 for non-cohesive granular materials.",
+      "viscosityTooltip": "Log10 of kinematic viscosity per phase (m\u00b2/s). Controls fluid-like behaviour. E.g. 3 means 10^3 = 1000 m\u00b2/s.",
+      "deformationTooltip": "Deformation coefficient (0-1) per phase. Controls how much the material deforms during flow. 1 = full deformation.",
+      "clayersTooltip": "Enable layer mode: solid phase forms a basal layer beneath the fluid phase instead of mixing.",
+      "cdispersionTooltip": "Enable dispersion: lateral spreading of material due to pressure gradients within the flow.",
+      "csurfaceTooltip": "Surface control for reservoir/lake simulations: balances water surface at edges, within, or both.",
+      "drag0Tooltip": "Mass flux drag parameter KDrag (m/s). Controls inter-phase momentum exchange rate. Higher values increase drag between solid and fluid.",
+      "shearingTooltip": "Energy dissipation through internal shearing. Higher values increase energy losses within the flow mass.",
+      "ambientTooltip": "Ambient (air) drag coefficient. Models resistance from surrounding air on the flowing mass.",
+      "fragmentationTooltip": "Fragmentation parameters controlling rock mass breakup during flow propagation."
     },
     "step3": {
       "title": "Entrainment, Stopping & Phase Transformation",
@@ -188,7 +217,15 @@
       "meltEfficiency": "Melt efficiency",
       "slideFraction": "Sliding fraction",
       "transformRasters": "Transformation Rasters",
-      "transformograph": "Transformation time-series file"
+      "transformograph": "Transformation time-series file",
+      "centrainmentTooltip": "Enable momentum-based basal entrainment: the flow erodes and incorporates underlying material.",
+      "stoppingThresholdTooltip": "Threshold value for the selected stopping criterion. Flow stops when the criterion drops below this value.",
+      "hentrmaxTooltip": "Raster map defining maximum entrainment depth (metres) for this phase.",
+      "rhentrmax1Tooltip": "Fractional ratio (0-1) of P1 maximum entrainment height relative to total entrainment height.",
+      "vhentrmaxTooltip": "Randomization bounds for entrainment height (min,max) for uncertainty analysis.",
+      "centrTooltip": "Raster map defining spatially variable entrainment coefficient (overrides scalar value).",
+      "cstoppingTooltip": "Stopping criterion: 0=off, 1=kinetic energy ratio, 2=momentum, 3=dynamic pressure. Controls when flow deposition begins.",
+      "cmeltTooltip": "Enable temperature-dependent ice melting and phase transformation between solid and fluid phases."
     },
     "step4": {
       "title": "Output & Timing",
@@ -210,7 +247,16 @@
       "hdeposit": "Observed deposit height",
       "zones": "Zone classification",
       "profile": "Profile coordinates",
-      "ctrlpoints": "Control points"
+      "ctrlpoints": "Control points",
+      "flagVTooltip": "Generate R-based visualization plots, maps, and animations from simulation output.",
+      "flagKTooltip": "Keep intermediate GRASS GIS raster maps after simulation. Useful for custom post-processing.",
+      "flagATooltip": "Generate additional output rasters: velocity, pressure, and kinetic energy maps for each timestep.",
+      "flagTTooltip": "Generate tsunami height raster maps for each output timestep.",
+      "impactareaTooltip": "Observed impact area raster for validation. Used to compute AUROC and other accuracy metrics.",
+      "hdepositTooltip": "Observed deposit height raster for validation. Used to compare simulated vs. observed deposition.",
+      "zonesTooltip": "Zone classification raster for spatially differentiated analysis of simulation results.",
+      "profileTooltip": "Profile line coordinates (x1,y1,x2,y2,...) for extracting cross-section data from results.",
+      "ctrlpointsTooltip": "Control point coordinates (x1,y1,x2,y2,...) for extracting time series at specific locations."
     },
     "step5": {
       "title": "Visualization",

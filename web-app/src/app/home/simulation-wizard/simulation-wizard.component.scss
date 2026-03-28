@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   padding: 0 8px 0 0;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   gap: 0;
 }
 
@@ -37,20 +37,20 @@
 .step-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: default;
+  gap: 8px;
+  cursor: pointer;
   white-space: nowrap;
 }
 
 .step-circle {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   border: 2px solid var(--border-color);
   background: var(--bg-primary);
@@ -59,7 +59,7 @@
 }
 
 .step-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
   transition: color var(--transition-normal) ease;
@@ -72,6 +72,20 @@
   margin: 0 12px;
   border-radius: 1px;
   transition: background var(--transition-normal) ease;
+}
+
+// Clickable step
+.wizard-step {
+  cursor: pointer;
+
+  &:hover .step-circle {
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+  }
+
+  &:hover .step-label {
+    color: var(--accent-primary);
+  }
 }
 
 // Active step
@@ -110,8 +124,9 @@
 
 .steps-content {
   flex: 1;
-  margin-top: 24px;
+  margin-top: 12px;
   overflow-y: auto;
+  min-height: 0;
   padding-right: 4px;
 
   // Custom scrollbar
@@ -136,22 +151,22 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
-  padding: 24px;
+  padding: 16px 20px;
   box-shadow: var(--shadow-xs);
 }
 
 .step-card-header {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 
   h3 {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
   }
 
   p {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-muted);
     margin: 0;
   }
@@ -160,11 +175,11 @@
 // ── Section headers inside steps ──
 
 .section-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 24px 0 12px 0;
-  padding-bottom: 8px;
+  margin: 12px 0 6px 0;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -173,6 +188,13 @@
   &:first-child {
     margin-top: 0;
   }
+}
+
+// ── Compact form items ──
+
+::ng-deep nz-form-item,
+::ng-deep .ant-form-item {
+  margin-bottom: 8px !important;
 }
 
 // ── Form styling overrides ──
@@ -247,12 +269,17 @@
   .ant-collapse-header {
     color: var(--text-primary) !important;
     font-weight: 600 !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
   }
 
   .ant-collapse-content {
     background: var(--bg-card) !important;
     border-top-color: var(--border-color) !important;
+  }
+
+  .ant-collapse-content-box {
+    padding: 12px !important;
   }
 
   // Descriptions (Review step)
@@ -579,4 +606,17 @@
   .ant-collapse-item {
     border-color: var(--border-color) !important;
   }
+}
+
+// ── Switch inline label ──
+
+.switch-label {
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.form-grid {
+  gap: 12px;
 }
