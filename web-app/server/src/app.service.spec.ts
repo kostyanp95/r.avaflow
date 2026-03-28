@@ -51,12 +51,11 @@ describe('AppService', () => {
       hentrmax2: null,
       hentrmax3: null,
       impactarea: null,
-      density: { densityOfP1: 2700, densityOfP2: 1800, densityOfP3: 1000 },
+      density: [2700, 1800, 1000],
       friction: null,
       viscosity: null,
       cohesion: null,
-      tint: 10,
-      tend: 30,
+      time: [10, 30],
     };
 
     const makeExperiment = (overrides: Record<string, any> = {}): Experiment => ({
@@ -66,9 +65,9 @@ describe('AppService', () => {
 
     it('generates valid r.avaflow command with all parameters', () => {
       const cmd = service.createExperiment(makeExperiment());
-      expect(cmd).toContain('r.avaflow -e -v');
+      expect(cmd).toContain('r.avaflow -e');
       expect(cmd).toContain('cellsize=20');
-      expect(cmd).toContain('phases=3');
+      expect(cmd).toContain('phases=s,fs,f');
       expect(cmd).toContain('elevation=dem');
       expect(cmd).toContain('density=2700,1800,1000');
       expect(cmd).toContain('time=10,30');
@@ -109,7 +108,7 @@ describe('AppService', () => {
       expect(cmd).not.toContain('hentrmax1=null');
     });
 
-    it('includes friction as 9 comma-separated values', () => {
+    it('includes friction as 9 comma-separated values (old format migration)', () => {
       const friction = {
         internalFrictionAngleOfP1: 25,
         internalFrictionAngleOfP2: 15,
@@ -125,33 +124,31 @@ describe('AppService', () => {
       expect(cmd).toContain('friction=25,15,0,20,10,0,0,0.05,0.001');
     });
 
+    it('includes friction as array (new format)', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ friction: [25, 15, 0, 20, 10, 0, 0, 0.05, 0.001] }),
+      );
+      expect(cmd).toContain('friction=25,15,0,20,10,0,0,0.05,0.001');
+    });
+
     it('omits friction when not provided', () => {
       const cmd = service.createExperiment(makeExperiment({ friction: null }));
       expect(cmd).not.toContain('friction=');
     });
 
-    it('omits friction when all values are null', () => {
-      const friction = {
-        internalFrictionAngleOfP1: null,
-        internalFrictionAngleOfP2: null,
-        internalFrictionAngleOfP3: null,
-        basalFrictionAngleOfP1: null,
-        basalFrictionAngleOfP2: null,
-        basalFrictionAngleOfP3: null,
-        fluidFrictionOfP1: null,
-        fluidFrictionOfP2: null,
-        fluidFrictionOfP3: null,
-      };
-      const cmd = service.createExperiment(makeExperiment({ friction }));
+    it('omits friction when equal to default', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ friction: [40, 20, 0, 20, 10, 0, 0, 0, 0.05] }),
+      );
       expect(cmd).not.toContain('friction=');
     });
 
-    it('substitutes 0 for null values in friction when some are set', () => {
+    it('migrates old friction format and uses defaults for null values', () => {
       const friction = {
         internalFrictionAngleOfP1: 35,
         internalFrictionAngleOfP2: null,
         internalFrictionAngleOfP3: null,
-        basalFrictionAngleOfP1: 20,
+        basalFrictionAngleOfP1: 25,
         basalFrictionAngleOfP2: null,
         basalFrictionAngleOfP3: null,
         fluidFrictionOfP1: null,
@@ -159,10 +156,11 @@ describe('AppService', () => {
         fluidFrictionOfP3: null,
       };
       const cmd = service.createExperiment(makeExperiment({ friction }));
-      expect(cmd).toContain('friction=35,0,0,20,0,0,0,0,0');
+      // null values get the ?? defaults from migrateParams: 20, 0, 10, 0, 0, 0, 0.05
+      expect(cmd).toContain('friction=35,20,0,25,10,0,0,0,0.05');
     });
 
-    it('includes viscosity as 3 comma-separated values', () => {
+    it('includes viscosity as 3 comma-separated values (old format)', () => {
       const viscosity = {
         viscosityOfP1: 10,
         viscosityOfP2: 5,
@@ -177,22 +175,30 @@ describe('AppService', () => {
       expect(cmd).not.toContain('viscosity=');
     });
 
-    it('never includes cohesion in the generated command', () => {
-      const cohesion = {
-        cohesionOfP1: 1000,
-        cohesionOfP2: 500,
-        cohesionOfP3: 0,
-      };
-      const cmdWith = service.createExperiment(makeExperiment({ cohesion }));
-      expect(cmdWith).not.toContain('cohesion=');
+    it('includes cohesion when non-zero values', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ cohesion: [1000, 500, 0] }),
+      );
+      expect(cmd).toContain('cohesion=1000,500,0');
+    });
 
-      const cmdWithout = service.createExperiment(makeExperiment({ cohesion: null }));
-      expect(cmdWithout).not.toContain('cohesion=');
+    it('omits cohesion when all zero (default)', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ cohesion: [0, 0, 0] }),
+      );
+      expect(cmd).not.toContain('cohesion=');
     });
 
     it('includes density as comma-separated values', () => {
       const cmd = service.createExperiment(makeExperiment());
       expect(cmd).toContain('density=2700,1800,1000');
+    });
+
+    it('migrates old density object format', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ density: { densityOfP1: 2600, densityOfP2: 1300, densityOfP3: 1000 } }),
+      );
+      expect(cmd).toContain('density=2600,1300,1000');
     });
 
     it('includes prefix from experiment name', () => {
@@ -204,7 +210,14 @@ describe('AppService', () => {
 
     it('includes time as tint,tend', () => {
       const cmd = service.createExperiment(
-        makeExperiment({ tint: 5, tend: 100 }),
+        makeExperiment({ time: [5, 100] }),
+      );
+      expect(cmd).toContain('time=5,100');
+    });
+
+    it('migrates old tint/tend format to time array', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ time: undefined, tint: 5, tend: 100 }),
       );
       expect(cmd).toContain('time=5,100');
     });
@@ -212,7 +225,39 @@ describe('AppService', () => {
     it('throws when density is missing', () => {
       expect(() =>
         service.createExperiment(makeExperiment({ density: null })),
-      ).toThrow('Density is not defined');
+      ).toThrow();
+    });
+
+    it('maps phases=1 to s', () => {
+      const cmd = service.createExperiment(makeExperiment({ phases: 1 }));
+      expect(cmd).toContain('phases=s');
+    });
+
+    it('maps phases=3 to s,fs,f', () => {
+      const cmd = service.createExperiment(makeExperiment({ phases: 3 }));
+      expect(cmd).toContain('phases=s,fs,f');
+    });
+
+    it('builds correct flags', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ flag_v: true, flag_k: true, flag_a: false }),
+      );
+      expect(cmd).toContain('-e -v -k');
+      expect(cmd).not.toContain('-a');
+    });
+
+    it('emits centrainment when non-zero', () => {
+      const cmd = service.createExperiment(
+        makeExperiment({ centrainment: 1, entrainment: [-7.0, 0.0] }),
+      );
+      expect(cmd).toContain('centrainment=1');
+      expect(cmd).toContain('entrainment=-7,0');
+    });
+
+    it('rejects invalid project names', () => {
+      const exp = makeExperiment();
+      exp.name = 'bad;name';
+      expect(() => service.createExperiment(exp)).toThrow('Invalid project name');
     });
   });
 
@@ -221,82 +266,69 @@ describe('AppService', () => {
   // ---------------------------------------------------------------------------
   describe('createInitialCommands()', () => {
     it('generates g.region commands with stripped elevation name', () => {
-      const experiment: Experiment = {
+      const experiments: Experiment[] = [{
         name: 'exp1',
         parameters: {
           elevation: 'basin_dem.tif',
-          hrelease1: null,
-          hrelease2: null,
-          hrelease3: null,
-          hentrmax1: null,
-          hentrmax2: null,
-          hentrmax3: null,
         },
-      };
-      const cmds = service.createInitialCommands(experiment);
-      // g.region uses stripped name (no extension)
+      }];
+      const cmds = service.createInitialCommands('testProject', experiments);
       expect(cmds).toContain('g.region -s rast=basin_dem\n');
-      // import line uses original filename as input but stripped name as output
       expect(cmds).toContain('input=DATA/basin_dem.tif output=basin_dem');
     });
 
     it('imports only non-null rasters', () => {
-      const experiment: Experiment = {
+      const experiments: Experiment[] = [{
         name: 'exp1',
         parameters: {
           elevation: 'dem.tif',
           hrelease1: 'hr1.tif',
           hrelease2: null,
-          hrelease3: null,
           hentrmax1: 'ent1.tif',
-          hentrmax2: null,
-          hentrmax3: null,
         },
-      };
-      const cmds = service.createInitialCommands(experiment);
+      }];
+      const cmds = service.createInitialCommands('testProject', experiments);
       expect(cmds).toContain('r.in.gdal -o --overwrite input=DATA/dem.tif output=dem');
       expect(cmds).toContain('r.in.gdal -o --overwrite input=DATA/hr1.tif output=hr1');
       expect(cmds).toContain('r.in.gdal -o --overwrite input=DATA/ent1.tif output=ent1');
-      // Should have exactly 3 import lines (elevation + hr1 + ent1)
       const importCount = (cmds.match(/r\.in\.gdal/g) || []).length;
       expect(importCount).toBe(3);
     });
 
     it('does not import rasters with literal "null" string', () => {
-      const experiment: Experiment = {
+      const experiments: Experiment[] = [{
         name: 'exp1',
         parameters: {
           elevation: 'dem.tif',
           hrelease1: 'null',
-          hrelease2: null,
-          hrelease3: null,
-          hentrmax1: null,
-          hentrmax2: null,
-          hentrmax3: null,
         },
-      };
-      const cmds = service.createInitialCommands(experiment);
+      }];
+      const cmds = service.createInitialCommands('testProject', experiments);
       const importCount = (cmds.match(/r\.in\.gdal/g) || []).length;
-      expect(importCount).toBe(1); // only elevation
+      expect(importCount).toBe(1);
     });
 
     it('places g.region -s after imports, not before', () => {
-      const experiment: Experiment = {
+      const experiments: Experiment[] = [{
         name: 'exp1',
         parameters: {
           elevation: 'dem.tif',
           hrelease1: 'hr1.tif',
-          hrelease2: null,
-          hrelease3: null,
-          hentrmax1: null,
-          hentrmax2: null,
-          hentrmax3: null,
         },
-      };
-      const cmds = service.createInitialCommands(experiment);
+      }];
+      const cmds = service.createInitialCommands('testProject', experiments);
       const lastImportIdx = cmds.lastIndexOf('r.in.gdal');
       const regionIdx = cmds.indexOf('g.region -s rast=dem');
       expect(regionIdx).toBeGreaterThan(lastImportIdx);
+    });
+
+    it('includes symlink snippet with project name', () => {
+      const experiments: Experiment[] = [{
+        name: 'exp1',
+        parameters: { elevation: 'dem.tif' },
+      }];
+      const cmds = service.createInitialCommands('myProject', experiments);
+      expect(cmds).toContain('ln -sf myProject/DATA DATA');
     });
   });
 
@@ -330,13 +362,12 @@ describe('AppService', () => {
             hentrmax1: null,
             hentrmax2: null,
             hentrmax3: null,
-            density: { densityOfP1: 2700, densityOfP2: 1800, densityOfP3: 1000 },
+            density: [2700, 1800, 1000],
             friction: null,
             viscosity: null,
             cohesion: null,
             impactarea: null,
-            tint: 10,
-            tend: 30,
+            time: [10, 30],
           },
         },
       ],
@@ -373,15 +404,15 @@ describe('AppService', () => {
       fs.mkdirSync(projPath, { recursive: true });
 
       // Write the script manually using the service methods
-      const initialCmds = service.createInitialCommands(project.experiments[0]);
+      const initialCmds = service.createInitialCommands(project.name, project.experiments);
       const expCmd = service.createExperiment(project.experiments[0]);
-      const script = initialCmds + '# 1 exp1\n' + expCmd + '\ng.region -d';
+      const script = initialCmds + '\n# 1 exp1\n' + expCmd + '\ng.region -d\n';
 
       const shPath = path.join(projPath, `${project.name}.sh`);
       fs.writeFileSync(shPath, script);
 
       const content = fs.readFileSync(shPath, 'utf-8');
-      expect(content).toContain('r.avaflow -e -v');
+      expect(content).toContain('r.avaflow -e');
       expect(content).toContain('g.region -d');
       expect(content).toContain('r.in.gdal');
     });

@@ -1,72 +1,37 @@
 // ──────────────────────────────────────────────
-// Simulation wizard interfaces (5-step wizard)
+// Simulation wizard interfaces (7-step wizard)
 // ──────────────────────────────────────────────
 
-/** Step 1: Project setup */
-export interface ProjectConfig {
-  name: string;       // project folder name
-  prefix: string;     // output prefix (alphanumeric + underscore)
-  cellsize: number;   // metres, min 1
-  phases: 's,fs,f';   // fixed three-phase for now
-}
-
-/** Step 2: Raster inputs */
-export interface RasterConfig {
-  elevation: string;    // filename, required
-  hrelease1?: string;
-  hrelease2?: string;
-  hrelease3?: string;
-  hentrmax1?: string;
-  hentrmax2?: string;
-  hentrmax3?: string;
-  impactarea?: string;
-}
-
-/** Step 3: Material parameters */
-export interface MaterialConfig {
-  density: [number, number, number];    // kg/m3 for P1, P2, P3
-  friction: (number | null)[];          // 9 friction values (null = not set)
-  cohesion: [number, number, number];   // N/m2 for P1, P2, P3
-  viscosity: (number | null)[];         // log10(m2/s) for P1, P2, P3 (null = not set)
-}
-
-/** Step 4: Advanced / timing */
-export interface AdvancedConfig {
-  tint: number;         // output interval, seconds
-  tend: number;         // end time, seconds
-  entrainment?: number;
-  stopping?: number;
-}
-
-/** Full simulation configuration (steps 1-4) */
-export interface SimulationConfig {
-  project: ProjectConfig;
-  rasters: RasterConfig;
-  materials: MaterialConfig;
-  advanced: AdvancedConfig;
-}
-
-/** Sensible defaults for a quick 3-phase test run */
-export const DEFAULT_SIMULATION_CONFIG: SimulationConfig = {
-  project: {
-    name: '',
-    prefix: 'sim',
-    cellsize: 20,
-    phases: 's,fs,f',
-  },
-  rasters: {
-    elevation: '',
-  },
-  materials: {
-    density: [2600, 1300, 1000],
-    friction: [35, 20, 0, 20, 10, 0, 3, 3, 0],
-    cohesion: [0, 0, 0],
-    viscosity: [0, 0, 0],
-  },
-  advanced: {
-    tint: 10,
-    tend: 120,
-  },
+/** Default values matching the original r.avaflow form */
+export const DEFAULTS = {
+  prefix: 'sim',
+  cellsize: 20,
+  phases: 3,
+  ctopo: 0,
+  limiter: 1,
+  gravity: 9.81,
+  cores: 8,
+  thresholds: [0.1, 10000, 10000, 1.0, 0.000001] as [number, number, number, number, number],
+  cfl: [0.4, 0.001] as [number, number],
+  slomo: [1.0, 1.0, 1.0] as [number, number, number],
+  density: [2700, 1800, 1000] as [number, number, number],
+  friction: [40, 20, 0, 20, 10, 0, 0, 0, 0.05] as number[],
+  cohesion: [0, 0, 0] as [number, number, number],
+  viscosity: [0, 0, 0] as [number, number, number],
+  deformation: [1.0, 1.0, 1.0] as [number, number, number],
+  drag: [1, 3, 1, 0.1, 1, 1] as number[],
+  virtualmass: [10, 0.12, 1] as [number, number, number],
+  slidepar: [0, 0, 0, 0, 0, 0] as number[],
+  centrainment: 0,
+  cstopping: 0,
+  entrainment_coeff: -7.0,
+  stopping_threshold: 0.0,
+  transformation: [0, 0, 0] as [number, number, number],
+  melting: [0, 0, 0, 0.2, 0.5] as number[],
+  tint: 10,
+  tend: 300,
+  visualization: [0, 0.1, 5.0, 5.0, 1, 100, 2000, 100, -11000, 9000, 100, 0.60, 0.25, 0.15, 0.2, 1.0] as number[],
+  viz_rscriptpath: 'Rscript',
 };
 
 // ──────────────────────────────────────────────
@@ -118,3 +83,23 @@ export interface Experiment {
   name: string;
   parameters: any;
 }
+
+// Keep SimulationConfig for backward compatibility (used by buildConfig in old code paths)
+export interface SimulationConfig {
+  project: { name: string; prefix: string; cellsize: number; phases: string };
+  rasters: { elevation: string; [key: string]: string | undefined };
+  materials: { density: number[]; friction: (number | null)[]; cohesion: number[]; viscosity: (number | null)[] };
+  advanced: { tint: number; tend: number; entrainment?: number; stopping?: number };
+}
+
+export const DEFAULT_SIMULATION_CONFIG: SimulationConfig = {
+  project: { name: '', prefix: 'sim', cellsize: 20, phases: 's,fs,f' },
+  rasters: { elevation: '' },
+  materials: {
+    density: [2700, 1800, 1000],
+    friction: [40, 20, 0, 20, 10, 0, 0, 0, 0.05],
+    cohesion: [0, 0, 0],
+    viscosity: [0, 0, 0],
+  },
+  advanced: { tint: 10, tend: 300 },
+};

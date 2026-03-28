@@ -546,3 +546,37 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+// ── Switch + Radio overrides ──
+
+::ng-deep {
+  .ant-switch {
+    background-color: var(--border-color-strong) !important;
+
+    &.ant-switch-checked {
+      background-color: var(--accent-primary) !important;
+    }
+  }
+
+  .ant-radio-wrapper {
+    color: var(--text-primary) !important;
+    font-size: 13px !important;
+  }
+
+  .ant-radio-inner {
+    background-color: var(--bg-input) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  .ant-radio-checked .ant-radio-inner {
+    border-color: var(--accent-primary) !important;
+
+    &::after {
+      background-color: var(--accent-primary) !important;
+    }
+  }
+
+  .ant-collapse-item {
+    border-color: var(--border-color) !important;
+  }
+}

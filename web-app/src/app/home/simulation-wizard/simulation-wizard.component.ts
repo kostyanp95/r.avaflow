@@ -5,7 +5,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzUploadChangeParam } from 'ng-zorro-antd/upload';
 import { WebSocketService } from '../../web-socket.service';
-import { SimulationConfig, DEFAULT_SIMULATION_CONFIG, RastersFromServer } from '../models/models';
+import { DEFAULTS, RastersFromServer } from '../models/models';
 import { APP_CONFIG } from '../../../environments/environment';
 
 @Component({
@@ -23,9 +23,11 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
 
   stepKeys = [
     'wizard.steps.projectSetup',
-    'wizard.steps.rasterFiles',
+    'wizard.steps.terrainRelease',
     'wizard.steps.materials',
-    'wizard.steps.advanced',
+    'wizard.steps.entrainmentStopping',
+    'wizard.steps.outputTiming',
+    'wizard.steps.visualization',
     'wizard.steps.reviewRun'
   ];
 
@@ -35,10 +37,12 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     'wizard.materials.p3Fluid'
   ];
 
-  projectForm: FormGroup;
-  rastersForm: FormGroup;
+  setupForm: FormGroup;
+  terrainForm: FormGroup;
   materialsForm: FormGroup;
-  advancedForm: FormGroup;
+  entrainmentForm: FormGroup;
+  outputForm: FormGroup;
+  visualizationForm: FormGroup;
 
   private destroy$ = new Subject<void>();
   private filesUploadedHandler: ((data: RastersFromServer) => void) | null = null;
@@ -49,50 +53,160 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     private ws: WebSocketService,
     private message: NzMessageService
   ) {
-    this.projectForm = this.fb.group({
+    const D = DEFAULTS;
+
+    // Step 0: Project & Simulation Setup
+    this.setupForm = this.fb.group({
       name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/)]],
-      prefix: ['sim', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/), Validators.maxLength(20)]],
-      cellsize: [20, [Validators.required, Validators.min(1)]]
+      prefix: [D.prefix, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/), Validators.maxLength(20)]],
+      cellsize: [D.cellsize, [Validators.required, Validators.min(1)]],
+      phases: [D.phases],
+      ctopo: [D.ctopo],
+      limiter: [D.limiter],
+      gravity: [D.gravity, [Validators.required, Validators.min(0)]],
+      cores: [D.cores, [Validators.required, Validators.min(1)]],
+      // Advanced simulation settings (collapsible)
+      threshold1: [D.thresholds[0]],
+      threshold2: [D.thresholds[1]],
+      threshold3: [D.thresholds[2]],
+      threshold4: [D.thresholds[3]],
+      threshold5: [D.thresholds[4]],
+      cfl_number: [D.cfl[0], [Validators.max(0.5)]],
+      cfl_timestep: [D.cfl[1]],
+      slomo_time: [D.slomo[0]],
+      slomo_viscosity: [D.slomo[1]],
+      slomo_flux: [D.slomo[2]],
+      flag_m: [false],
+      sampling: [100],
+      aoi_north: [null],
+      aoi_south: [null],
+      aoi_west: [null],
+      aoi_east: [null],
     });
 
-    this.rastersForm = this.fb.group({
+    // Step 1: Terrain & Release
+    this.terrainForm = this.fb.group({
       elevation: ['', Validators.required],
       hrelease1: [null],
       hrelease2: [null],
       hrelease3: [null],
-      hentrmax1: [null],
-      hentrmax2: [null],
-      hentrmax3: [null],
-      impactarea: [null]
+      rhrelease1: [null, [Validators.min(0), Validators.max(1)]],
+      vhrelease: [null],
+      trelease: [null],
+      trelstop: [null],
+      vinx1: [null], viny1: [null],
+      vinx2: [null], viny2: [null],
+      vinx3: [null], viny3: [null],
+      hydrograph: [null],
+      hydrocoords: [null],
     }, { validators: SimulationWizardComponent.atLeastOneHrelease });
 
+    // Step 2: Materials
     this.materialsForm = this.fb.group({
-      density0: [2600, [Validators.required, Validators.min(1)]],
-      density1: [1300, [Validators.required, Validators.min(1)]],
-      density2: [1000, [Validators.required, Validators.min(1)]],
-      friction0: [35, [Validators.min(0), Validators.max(90)]],
-      friction1: [20, [Validators.min(0), Validators.max(90)]],
-      friction2: [0, [Validators.min(0), Validators.max(90)]],
-      friction3: [20, [Validators.min(0), Validators.max(90)]],
-      friction4: [10, [Validators.min(0), Validators.max(90)]],
-      friction5: [0, [Validators.min(0), Validators.max(90)]],
-      friction6: [3],
-      friction7: [3],
-      friction8: [0],
+      density0: [D.density[0], [Validators.required, Validators.min(1)]],
+      density1: [D.density[1], [Validators.required, Validators.min(1)]],
+      density2: [D.density[2], [Validators.required, Validators.min(1)]],
+      friction0: [D.friction[0], [Validators.min(0), Validators.max(90)]],
+      friction1: [D.friction[1], [Validators.min(0), Validators.max(90)]],
+      friction2: [D.friction[2], [Validators.min(0), Validators.max(90)]],
+      friction3: [D.friction[3], [Validators.min(0), Validators.max(90)]],
+      friction4: [D.friction[4], [Validators.min(0), Validators.max(90)]],
+      friction5: [D.friction[5], [Validators.min(0), Validators.max(90)]],
+      friction6: [D.friction[6]],
+      friction7: [D.friction[7]],
+      friction8: [D.friction[8]],
       cohesion0: [0, Validators.min(0)],
       cohesion1: [0, Validators.min(0)],
       cohesion2: [0, Validators.min(0)],
       viscosity0: [0],
       viscosity1: [0],
-      viscosity2: [0]
+      viscosity2: [0],
+      deformation0: [D.deformation[0], [Validators.min(0), Validators.max(1)]],
+      deformation1: [D.deformation[1], [Validators.min(0), Validators.max(1)]],
+      deformation2: [D.deformation[2], [Validators.min(0), Validators.max(1)]],
+      clayers: [0],
+      cdispersion: [0],
+      csurface: [0],
+      // Inter-phase interactions (collapsible, multi-phase only)
+      drag0: [D.drag[0]], drag1: [D.drag[1]], drag2: [D.drag[2]],
+      drag3: [D.drag[3]], drag4: [D.drag[4]], drag5: [D.drag[5]],
+      vm0: [D.virtualmass[0]], vm1: [D.virtualmass[1]], vm2: [D.virtualmass[2]],
+      // Block sliding & advanced (collapsible)
+      slidepar0: [0], slidepar1: [0], slidepar2: [0],
+      slidepar3: [0], slidepar4: [0], slidepar5: [0],
+      shearing: [0],
+      fragmentation0: [0], fragmentation1: [0],
+      ambient: [0],
+      // Spatial parameter map overrides (collapsible)
+      phi1: [null], phi2: [null], phi3: [null],
+      delta1: [null], delta2: [null], delta3: [null],
+      addfri1: [null], addfri2: [null], addfri3: [null],
+      coh1: [null], coh2: [null], coh3: [null],
+      ny1: [null], ny2: [null], ny3: [null],
+      cdeform: [null],
+      zfrag: [null],
+      ambdrag: [null],
+      frictiograph: [null],
+      tslide: [null],
     });
 
-    this.advancedForm = this.fb.group({
-      tint: [10, [Validators.required, Validators.min(1)]],
-      tend: [120, [Validators.required, Validators.min(1)]],
-      entrainment: [null, [Validators.min(0), Validators.max(1)]],
-      stopping: [null, Validators.min(0)]
+    // Step 3: Entrainment, Stopping & Phase Transformation
+    this.entrainmentForm = this.fb.group({
+      centrainment: [0],
+      entrainment_coeff: [D.entrainment_coeff, [Validators.max(0)]],
+      stopping_threshold: [D.stopping_threshold, [Validators.min(0)]],
+      hentrmax1: [null],
+      hentrmax2: [null],
+      hentrmax3: [null],
+      rhentrmax1: [null, [Validators.min(0), Validators.max(1)]],
+      vhentrmax: [null],
+      centr: [null],
+      cstopping: [0],
+      tstop: [null],
+      // Phase transformation (multi-phase only)
+      cmelt: [0],
+      transformation0: [0], transformation1: [0], transformation2: [0],
+      melting0: [0], melting1: [0], melting2: [0], melting3: [0.2], melting4: [0.5],
+      ctrans12: [null], ctrans13: [null], ctrans23: [null],
+      transformograph: [null],
+    });
+
+    // Step 4: Output & Timing
+    this.outputForm = this.fb.group({
+      tint: [D.tint, [Validators.required, Validators.min(1)]],
+      tend: [D.tend, [Validators.required, Validators.min(1)]],
+      flag_k: [false],
+      flag_a: [false],
+      flag_t: [false],
+      flag_v: [true],
+      impactarea: [null],
+      hdeposit: [null],
+      zones: [null],
+      profile: [null],
+      ctrlpoints: [null],
     }, { validators: SimulationWizardComponent.tendGreaterThanTint });
+
+    // Step 5: Visualization (all optional)
+    this.visualizationForm = this.fb.group({
+      pbgr: [null], pbgg: [null], pbgb: [null],
+      viz_deform: [0],
+      viz_hflowmin: [0.1],
+      viz_hflowref: [5.0],
+      viz_htsunref: [5.0],
+      viz_hcontmin: [1],
+      viz_hcontmax: [100],
+      viz_hcontint: [2000],
+      viz_zcontmin: [100],
+      viz_zcontmax: [-11000],
+      viz_zcontint: [9000],
+      viz_pred: [100],
+      viz_pgreen: [0.60],
+      viz_pblue: [0.25],
+      viz_pexp: [0.15],
+      viz_phexagg: [0.2],
+      viz_pvpath: [1.0],
+      viz_rscriptpath: ['Rscript'],
+    });
   }
 
   ngOnInit(): void {
@@ -118,6 +232,30 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Conditional logic ──
+
+  get isMultiPhase(): boolean {
+    return this.setupForm.value.phases === 3;
+  }
+
+  get isEntrainmentActive(): boolean {
+    return this.entrainmentForm.value.centrainment === 1;
+  }
+
+  get isStoppingActive(): boolean {
+    return this.entrainmentForm.value.cstopping !== 0;
+  }
+
+  get isMeltActive(): boolean {
+    return this.entrainmentForm.value.cmelt === 1;
+  }
+
+  get isMultipleRuns(): boolean {
+    return this.setupForm.value.flag_m === true;
+  }
+
+  // ── Validators ──
+
   static atLeastOneHrelease(group: AbstractControl): ValidationErrors | null {
     const h1 = group.get('hrelease1')?.value;
     const h2 = group.get('hrelease2')?.value;
@@ -134,23 +272,27 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  // ── Navigation ──
+
   get currentFormGroup(): FormGroup {
     switch (this.currentStep) {
-      case 0: return this.projectForm;
-      case 1: return this.rastersForm;
+      case 0: return this.setupForm;
+      case 1: return this.terrainForm;
       case 2: return this.materialsForm;
-      case 3: return this.advancedForm;
-      default: return this.projectForm;
+      case 3: return this.entrainmentForm;
+      case 4: return this.outputForm;
+      case 5: return this.visualizationForm;
+      default: return this.setupForm;
     }
   }
 
   get isCurrentStepValid(): boolean {
-    if (this.currentStep === 4) return true;
+    if (this.currentStep === 5 || this.currentStep === 6) return true;
     return this.currentFormGroup.valid;
   }
 
   next(): void {
-    if (this.currentStep < 4) {
+    if (this.currentStep < 6) {
       this.currentStep++;
     }
   }
@@ -169,133 +311,325 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     }
   }
 
-  buildConfig(): SimulationConfig {
-    const p = this.projectForm.value;
-    const r = this.rastersForm.value;
+  // ── Build flat API payload ──
+
+  buildApiPayload(): any {
+    const s = this.setupForm.value;
+    const t = this.terrainForm.value;
     const m = this.materialsForm.value;
-    const a = this.advancedForm.value;
+    const e = this.entrainmentForm.value;
+    const o = this.outputForm.value;
+    const v = this.visualizationForm.value;
+    const mp = this.isMultiPhase;
+
+    const params: any = {
+      cellsize: s.cellsize,
+      phases: s.phases,
+      ctopo: s.ctopo,
+      limiter: s.limiter,
+      gravity: s.gravity,
+      cores: s.cores,
+      thresholds: [s.threshold1, s.threshold2, s.threshold3, s.threshold4, s.threshold5],
+      cfl: [s.cfl_number, s.cfl_timestep],
+      slomo: [s.slomo_time, s.slomo_viscosity, s.slomo_flux],
+      time: [o.tint, o.tend],
+      elevation: t.elevation,
+      hrelease1: t.hrelease1 || null,
+      hrelease2: mp ? (t.hrelease2 || null) : null,
+      hrelease3: mp ? (t.hrelease3 || null) : null,
+      rhrelease1: t.rhrelease1 || null,
+      vhrelease: t.vhrelease || null,
+      trelease: t.trelease || null,
+      trelstop: t.trelstop || null,
+      vinx1: t.vinx1 || null, viny1: t.viny1 || null,
+      vinx2: mp ? (t.vinx2 || null) : null, viny2: mp ? (t.viny2 || null) : null,
+      vinx3: mp ? (t.vinx3 || null) : null, viny3: mp ? (t.viny3 || null) : null,
+      hydrograph: t.hydrograph || null,
+      hydrocoords: t.hydrocoords || null,
+      density: [m.density0, m.density1, m.density2],
+      friction: [m.friction0, m.friction1, m.friction2, m.friction3, m.friction4, m.friction5, m.friction6, m.friction7, m.friction8],
+      cohesion: [m.cohesion0, m.cohesion1, m.cohesion2],
+      viscosity: [m.viscosity0, m.viscosity1, m.viscosity2],
+      deformation: [m.deformation0, m.deformation1, m.deformation2],
+      clayers: m.clayers,
+      cdispersion: m.cdispersion,
+      csurface: m.csurface,
+      drag: mp ? [m.drag0, m.drag1, m.drag2, m.drag3, m.drag4, m.drag5] : null,
+      virtualmass: mp ? [m.vm0, m.vm1, m.vm2] : null,
+      slidepar: [m.slidepar0, m.slidepar1, m.slidepar2, m.slidepar3, m.slidepar4, m.slidepar5],
+      shearing: m.shearing,
+      fragmentation: [m.fragmentation0, m.fragmentation1],
+      ambient: m.ambient,
+      centrainment: e.centrainment,
+      cstopping: e.cstopping,
+      entrainment: [e.entrainment_coeff, e.stopping_threshold],
+      hentrmax1: e.hentrmax1 || null,
+      hentrmax2: mp ? (e.hentrmax2 || null) : null,
+      hentrmax3: mp ? (e.hentrmax3 || null) : null,
+      rhentrmax1: e.rhentrmax1 || null,
+      vhentrmax: e.vhentrmax || null,
+      centr: e.centr || null,
+      tstop: e.tstop || null,
+      cmelt: mp ? e.cmelt : 0,
+      transformation: mp ? [e.transformation0, e.transformation1, e.transformation2] : null,
+      melting: (mp && e.cmelt === 1) ? [e.melting0, e.melting1, e.melting2, e.melting3, e.melting4] : null,
+      ctrans12: mp ? (e.ctrans12 || null) : null,
+      ctrans13: mp ? (e.ctrans13 || null) : null,
+      ctrans23: mp ? (e.ctrans23 || null) : null,
+      transformograph: mp ? (e.transformograph || null) : null,
+      impactarea: o.impactarea || null,
+      hdeposit: o.hdeposit || null,
+      zones: o.zones || null,
+      profile: o.profile || null,
+      ctrlpoints: o.ctrlpoints || null,
+      flag_m: s.flag_m || false,
+      flag_k: o.flag_k || false,
+      flag_a: o.flag_a || false,
+      flag_t: o.flag_t || false,
+      flag_v: o.flag_v !== false,
+    };
+
+    // Add sampling only if multiple runs
+    if (s.flag_m) {
+      params.sampling = s.sampling;
+    }
+
+    // Add AOI if set
+    if (s.aoi_north != null && s.aoi_south != null && s.aoi_west != null && s.aoi_east != null) {
+      params.aoicoords = [s.aoi_north, s.aoi_south, s.aoi_west, s.aoi_east];
+    }
+
+    // Spatial parameter map overrides
+    const rasterOverrides = [
+      'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+      'addfri1', 'addfri2', 'addfri3', 'coh1', 'coh2', 'coh3',
+      'ny1', 'ny2', 'ny3', 'cdeform', 'zfrag', 'ambdrag', 'tslide'
+    ];
+    for (const key of rasterOverrides) {
+      params[key] = m[key] || null;
+    }
+    params.frictiograph = m.frictiograph || null;
+
+    // Visualization
+    if (v.pbgr) params.pbgr = v.pbgr;
+    if (v.pbgg) params.pbgg = v.pbgg;
+    if (v.pbgb) params.pbgb = v.pbgb;
+
+    params.visualization = [
+      v.viz_deform, v.viz_hflowmin, v.viz_hflowref, v.viz_htsunref,
+      v.viz_hcontmin, v.viz_hcontmax, v.viz_hcontint,
+      v.viz_zcontmin, v.viz_zcontmax, v.viz_zcontint,
+      v.viz_pred, v.viz_pgreen, v.viz_pblue, v.viz_pexp,
+      v.viz_phexagg, v.viz_pvpath
+    ];
+    params.rscriptpath = v.viz_rscriptpath;
 
     return {
-      project: { name: p.name, prefix: p.prefix, cellsize: p.cellsize, phases: 's,fs,f' },
-      rasters: {
-        elevation: r.elevation,
-        ...(r.hrelease1 && { hrelease1: r.hrelease1 }),
-        ...(r.hrelease2 && { hrelease2: r.hrelease2 }),
-        ...(r.hrelease3 && { hrelease3: r.hrelease3 }),
-        ...(r.hentrmax1 && { hentrmax1: r.hentrmax1 }),
-        ...(r.hentrmax2 && { hentrmax2: r.hentrmax2 }),
-        ...(r.hentrmax3 && { hentrmax3: r.hentrmax3 }),
-        ...(r.impactarea && { impactarea: r.impactarea }),
-      },
-      materials: {
-        density: [m.density0, m.density1, m.density2],
-        friction: [m.friction0, m.friction1, m.friction2, m.friction3, m.friction4, m.friction5, m.friction6, m.friction7, m.friction8],
-        cohesion: [m.cohesion0, m.cohesion1, m.cohesion2],
-        viscosity: [m.viscosity0, m.viscosity1, m.viscosity2],
-      },
-      advanced: {
-        tint: a.tint,
-        tend: a.tend,
-        ...(a.entrainment != null && { entrainment: a.entrainment }),
-        ...(a.stopping != null && { stopping: a.stopping }),
-      }
+      name: s.name,
+      experiments: [{
+        name: s.prefix,
+        parameters: params
+      }]
     };
   }
+
+  private arrEq(a: any[], b: any[]): boolean {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+
+  // ── Strip extension helper ──
 
   stripExt(filename: string): string {
     return filename ? filename.replace(/\.tiff?$/i, '') : '';
   }
 
-  generateScriptPreview(config: SimulationConfig): string {
+  // ── Generate script preview ──
+
+  generateScriptPreview(): string {
+    const payload = this.buildApiPayload();
+    const p = payload.experiments[0].parameters;
     const lines: string[] = [];
-    const elev = this.stripExt(config.rasters.elevation);
+    const elev = this.stripExt(p.elevation);
 
     lines.push('g.region -d');
-    lines.push(`g.region -s rast=${elev}`);
 
     // Import all rasters
-    const rasterEntries: [string, string | undefined][] = [
-      ['elevation', config.rasters.elevation],
-      ['hrelease1', config.rasters.hrelease1],
-      ['hrelease2', config.rasters.hrelease2],
-      ['hrelease3', config.rasters.hrelease3],
-      ['hentrmax1', config.rasters.hentrmax1],
-      ['hentrmax2', config.rasters.hentrmax2],
-      ['hentrmax3', config.rasters.hentrmax3],
-      ['impactarea', config.rasters.impactarea],
-    ];
-    for (const [, val] of rasterEntries) {
+    const allRasters = this.collectRasterFields(p);
+    for (const val of allRasters) {
       if (val) {
         const name = this.stripExt(val);
         lines.push(`r.in.gdal -o --overwrite input=DATA/${val} output=${name}`);
       }
     }
 
-    // r.avaflow command
-    const parts: string[] = [
-      `r.avaflow -e -v prefix=${config.project.prefix} cellsize=${config.project.cellsize} phases=s,fs,f \\`,
-      `  elevation=${elev} \\`,
-    ];
+    lines.push('');
+    lines.push(`g.region -s rast=${elev}`);
+    lines.push('');
 
-    const optionalRasters: [string, string | undefined][] = [
-      ['hrelease1', config.rasters.hrelease1],
-      ['hrelease2', config.rasters.hrelease2],
-      ['hrelease3', config.rasters.hrelease3],
-      ['hentrmax1', config.rasters.hentrmax1],
-      ['hentrmax2', config.rasters.hentrmax2],
-      ['hentrmax3', config.rasters.hentrmax3],
-      ['impactarea', config.rasters.impactarea],
+    // Build r.avaflow command
+    const flags: string[] = ['-e'];
+    if (p.flag_v !== false) flags.push('-v');
+    if (p.flag_k) flags.push('-k');
+    if (p.flag_a) flags.push('-a');
+    if (p.flag_t) flags.push('-t');
+
+    const parts: string[] = [];
+    const phasesStr = p.phases === 1 ? 's' : 's,fs,f';
+    parts.push(`r.avaflow ${flags.join(' ')} prefix=${payload.experiments[0].name} cellsize=${p.cellsize} phases=${phasesStr} \\`);
+    parts.push(`  elevation=${elev} \\`);
+
+    // Optional rasters
+    const rasterParams = [
+      'hrelease1', 'hrelease2', 'hrelease3',
+      'hentrmax1', 'hentrmax2', 'hentrmax3',
+      'impactarea', 'hdeposit', 'zones',
+      'trelease', 'trelstop',
+      'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
+      'centr', 'tstop',
+      'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+      'addfri1', 'addfri2', 'addfri3',
+      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
+      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ctrans12', 'ctrans13', 'ctrans23',
+      'pbgr', 'pbgg', 'pbgb',
     ];
-    for (const [key, val] of optionalRasters) {
-      if (val) {
-        parts.push(`  ${key}=${this.stripExt(val)} \\`);
+    for (const key of rasterParams) {
+      if (p[key]) {
+        parts.push(`  ${key}=${this.stripExt(p[key])} \\`);
       }
     }
 
-    const d = config.materials.density;
-    parts.push(`  density=${d[0]},${d[1]},${d[2]} \\`);
+    const D = DEFAULTS;
 
-    const f = config.materials.friction;
-    if (f.some(v => v != null)) {
-      parts.push(`  friction=${f.map(v => v ?? 0).join(',')} \\`);
+    // Scalars: only emit if non-default
+    if (p.ctopo !== 0) parts.push(`  ctopo=${p.ctopo} \\`);
+    if (p.limiter !== 1) parts.push(`  limiter=${p.limiter} \\`);
+    if (p.gravity !== 9.81) parts.push(`  gravity=${p.gravity} \\`);
+    if (p.cores !== 8) parts.push(`  cores=${p.cores} \\`);
+
+    // Arrays: only emit if different from defaults
+    if (!this.arrEq(p.density, D.density)) parts.push(`  density=${p.density.join(',')} \\`);
+    if (!this.arrEq(p.friction, D.friction)) parts.push(`  friction=${p.friction.join(',')} \\`);
+    if (!this.arrEq(p.cohesion, [0, 0, 0])) parts.push(`  cohesion=${p.cohesion.join(',')} \\`);
+    if (!this.arrEq(p.viscosity, [0, 0, 0])) parts.push(`  viscosity=${p.viscosity.join(',')} \\`);
+    if (p.deformation && !this.arrEq(p.deformation, [1, 1, 1])) parts.push(`  deformation=${p.deformation.join(',')} \\`);
+
+    if (p.centrainment !== 0) parts.push(`  centrainment=${p.centrainment} \\`);
+    if (p.cstopping !== 0) parts.push(`  cstopping=${p.cstopping} \\`);
+    if (p.centrainment !== 0 || p.cstopping !== 0) {
+      if (!this.arrEq(p.entrainment, [D.entrainment_coeff, D.stopping_threshold])) {
+        parts.push(`  entrainment=${p.entrainment.join(',')} \\`);
+      }
     }
 
-    const visc = config.materials.viscosity;
-    if (visc.some(v => v != null)) {
-      parts.push(`  viscosity=${visc.map(v => v ?? 0).join(',')} \\`);
+    if (p.clayers !== 0) parts.push(`  clayers=${p.clayers} \\`);
+    if (p.cdispersion !== 0) parts.push(`  cdispersion=${p.cdispersion} \\`);
+    if (p.csurface !== 0) parts.push(`  csurface=${p.csurface} \\`);
+
+    if (p.drag && this.isMultiPhase && !this.arrEq(p.drag, D.drag)) {
+      parts.push(`  drag=${p.drag.join(',')} \\`);
+    }
+    if (p.virtualmass && this.isMultiPhase && !this.arrEq(p.virtualmass, D.virtualmass)) {
+      parts.push(`  virtualmass=${p.virtualmass.join(',')} \\`);
     }
 
-    parts.push(`  time=${config.advanced.tint},${config.advanced.tend}`);
+    if (p.slidepar && !this.arrEq(p.slidepar, [0, 0, 0, 0, 0, 0])) {
+      parts.push(`  slidepar=${p.slidepar.join(',')} \\`);
+    }
+    if (p.shearing !== 0) parts.push(`  shearing=${p.shearing} \\`);
+    if (p.fragmentation && !this.arrEq(p.fragmentation, [0, 0])) {
+      parts.push(`  fragmentation=${p.fragmentation.join(',')} \\`);
+    }
+    if (p.ambient !== 0) parts.push(`  ambient=${p.ambient} \\`);
 
-    lines.push('');
+    if (p.cmelt !== 0 && this.isMultiPhase) {
+      parts.push(`  cmelt=${p.cmelt} \\`);
+      if (p.transformation && !this.arrEq(p.transformation, [0, 0, 0])) {
+        parts.push(`  transformation=${p.transformation.join(',')} \\`);
+      }
+      if (p.melting && !this.arrEq(p.melting, D.melting)) {
+        parts.push(`  melting=${p.melting.join(',')} \\`);
+      }
+    }
+
+    if (p.rhrelease1 != null) parts.push(`  rhrelease1=${p.rhrelease1} \\`);
+    if (p.vhrelease) parts.push(`  vhrelease=${p.vhrelease} \\`);
+    if (p.rhentrmax1 != null) parts.push(`  rhentrmax1=${p.rhentrmax1} \\`);
+    if (p.vhentrmax) parts.push(`  vhentrmax=${p.vhentrmax} \\`);
+    if (p.hydrograph) parts.push(`  hydrograph=${p.hydrograph} \\`);
+    if (p.hydrocoords) parts.push(`  hydrocoords=${p.hydrocoords} \\`);
+    if (p.frictiograph) parts.push(`  frictiograph=${p.frictiograph} \\`);
+    if (p.transformograph) parts.push(`  transformograph=${p.transformograph} \\`);
+    if (p.profile) parts.push(`  profile=${p.profile} \\`);
+    if (p.ctrlpoints) parts.push(`  ctrlpoints=${p.ctrlpoints} \\`);
+
+    if (p.thresholds && !this.arrEq(p.thresholds, D.thresholds)) {
+      parts.push(`  thresholds=${p.thresholds.join(',')} \\`);
+    }
+    if (p.cfl && !this.arrEq(p.cfl, D.cfl)) {
+      parts.push(`  cfl=${p.cfl.join(',')} \\`);
+    }
+    if (p.slomo && !this.arrEq(p.slomo, [1, 1, 1])) {
+      parts.push(`  slomo=${p.slomo.join(',')} \\`);
+    }
+    if (p.flag_m) parts.push(`  sampling=${p.sampling || 100} \\`);
+    if (p.aoicoords) parts.push(`  aoicoords=${p.aoicoords.join(',')} \\`);
+
+    if (p.visualization && !this.arrEq(p.visualization, D.visualization)) {
+      parts.push(`  visualization=${p.visualization.join(',')} \\`);
+    }
+
+    // Last line: time (no trailing backslash)
+    parts.push(`  time=${p.time.join(',')}`);
+
     lines.push(parts.join('\n'));
+    lines.push('');
+    lines.push('g.region -d');
 
     return lines.join('\n');
   }
 
+  private collectRasterFields(p: any): string[] {
+    const rasterKeys = [
+      'elevation', 'hrelease1', 'hrelease2', 'hrelease3',
+      'hentrmax1', 'hentrmax2', 'hentrmax3',
+      'impactarea', 'hdeposit', 'zones',
+      'trelease', 'trelstop',
+      'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
+      'centr', 'tstop',
+      'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+      'addfri1', 'addfri2', 'addfri3',
+      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
+      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ctrans12', 'ctrans13', 'ctrans23',
+      'pbgr', 'pbgg', 'pbgb',
+    ];
+    return rasterKeys.map(k => p[k]).filter(Boolean);
+  }
+
+  // ── Save / Run ──
+
   saveOnly(): void {
-    const config = this.buildConfig();
-    const body = this.buildApiPayload(config);
+    const body = this.buildApiPayload();
     this.http.post(`${APP_CONFIG.apiUrl}/experiment`, body)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.message.success('Project saved');
-          this.projectSaved.emit(config.project.name);
+          this.projectSaved.emit(body.name);
         },
         error: () => this.message.error('Failed to save project')
       });
   }
 
   saveAndRun(): void {
-    const config = this.buildConfig();
-    const body = this.buildApiPayload(config);
+    const body = this.buildApiPayload();
     this.http.post(`${APP_CONFIG.apiUrl}/experiment`, body)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          this.projectSaved.emit(config.project.name);
-          this.http.post(`${APP_CONFIG.apiUrl}/run`, { projectName: config.project.name })
+          this.projectSaved.emit(body.name);
+          this.http.post(`${APP_CONFIG.apiUrl}/run`, { projectName: body.name })
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
@@ -309,60 +643,209 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       });
   }
 
+  // ── Reset ──
+
   reset(): void {
-    const d = DEFAULT_SIMULATION_CONFIG;
+    const D = DEFAULTS;
     this.currentStep = 0;
     this.availableRasters = [];
-    this.projectForm.reset({ name: '', prefix: d.project.prefix, cellsize: d.project.cellsize });
-    this.rastersForm.reset();
-    this.materialsForm.reset({
-      density0: d.materials.density[0], density1: d.materials.density[1], density2: d.materials.density[2],
-      friction0: d.materials.friction[0], friction1: d.materials.friction[1], friction2: d.materials.friction[2],
-      friction3: d.materials.friction[3], friction4: d.materials.friction[4], friction5: d.materials.friction[5],
-      friction6: d.materials.friction[6], friction7: d.materials.friction[7], friction8: d.materials.friction[8],
-      cohesion0: 0, cohesion1: 0, cohesion2: 0,
-      viscosity0: 0, viscosity1: 0, viscosity2: 0
+    this.setupForm.reset({
+      name: '', prefix: D.prefix, cellsize: D.cellsize, phases: D.phases,
+      ctopo: D.ctopo, limiter: D.limiter, gravity: D.gravity, cores: D.cores,
+      threshold1: D.thresholds[0], threshold2: D.thresholds[1], threshold3: D.thresholds[2],
+      threshold4: D.thresholds[3], threshold5: D.thresholds[4],
+      cfl_number: D.cfl[0], cfl_timestep: D.cfl[1],
+      slomo_time: D.slomo[0], slomo_viscosity: D.slomo[1], slomo_flux: D.slomo[2],
+      flag_m: false, sampling: 100,
+      aoi_north: null, aoi_south: null, aoi_west: null, aoi_east: null,
     });
-    this.advancedForm.reset({ tint: d.advanced.tint, tend: d.advanced.tend });
+    this.terrainForm.reset();
+    this.materialsForm.reset({
+      density0: D.density[0], density1: D.density[1], density2: D.density[2],
+      friction0: D.friction[0], friction1: D.friction[1], friction2: D.friction[2],
+      friction3: D.friction[3], friction4: D.friction[4], friction5: D.friction[5],
+      friction6: D.friction[6], friction7: D.friction[7], friction8: D.friction[8],
+      cohesion0: 0, cohesion1: 0, cohesion2: 0,
+      viscosity0: 0, viscosity1: 0, viscosity2: 0,
+      deformation0: D.deformation[0], deformation1: D.deformation[1], deformation2: D.deformation[2],
+      clayers: 0, cdispersion: 0, csurface: 0,
+      drag0: D.drag[0], drag1: D.drag[1], drag2: D.drag[2],
+      drag3: D.drag[3], drag4: D.drag[4], drag5: D.drag[5],
+      vm0: D.virtualmass[0], vm1: D.virtualmass[1], vm2: D.virtualmass[2],
+      slidepar0: 0, slidepar1: 0, slidepar2: 0, slidepar3: 0, slidepar4: 0, slidepar5: 0,
+      shearing: 0, fragmentation0: 0, fragmentation1: 0, ambient: 0,
+    });
+    this.entrainmentForm.reset({
+      centrainment: 0, entrainment_coeff: D.entrainment_coeff, stopping_threshold: D.stopping_threshold,
+      cstopping: 0, cmelt: 0,
+      transformation0: 0, transformation1: 0, transformation2: 0,
+      melting0: 0, melting1: 0, melting2: 0, melting3: 0.2, melting4: 0.5,
+    });
+    this.outputForm.reset({
+      tint: D.tint, tend: D.tend,
+      flag_k: false, flag_a: false, flag_t: false, flag_v: true,
+    });
+    this.visualizationForm.reset({
+      viz_deform: 0, viz_hflowmin: 0.1, viz_hflowref: 5.0, viz_htsunref: 5.0,
+      viz_hcontmin: 1, viz_hcontmax: 100, viz_hcontint: 2000,
+      viz_zcontmin: 100, viz_zcontmax: -11000, viz_zcontint: 9000,
+      viz_pred: 100, viz_pgreen: 0.60, viz_pblue: 0.25, viz_pexp: 0.15,
+      viz_phexagg: 0.2, viz_pvpath: 1.0, viz_rscriptpath: 'Rscript',
+    });
   }
+
+  // ── Load from project (supports old nested + new flat format) ──
 
   loadFromProject(project: { name: string; experiments: Array<{ name: string; parameters: any }> }): void {
     if (!project?.experiments?.length) return;
     const p = project.experiments[0].parameters;
     this.currentStep = 0;
 
-    this.projectForm.patchValue({ name: project.name, prefix: project.experiments[0].name, cellsize: p.cellsize ?? 20 });
+    // Detect old format: density is object not array
+    const density = Array.isArray(p.density) ? p.density : (p.density ? [p.density.densityOfP1, p.density.densityOfP2, p.density.densityOfP3] : DEFAULTS.density);
+    const friction = Array.isArray(p.friction) ? p.friction : (p.friction ? [
+      p.friction.internalFrictionAngleOfP1, p.friction.internalFrictionAngleOfP2, p.friction.internalFrictionAngleOfP3,
+      p.friction.basalFrictionAngleOfP1, p.friction.basalFrictionAngleOfP2, p.friction.basalFrictionAngleOfP3,
+      p.friction.fluidFrictionOfP1, p.friction.fluidFrictionOfP2, p.friction.fluidFrictionOfP3,
+    ] : DEFAULTS.friction);
+    const cohesion = Array.isArray(p.cohesion) ? p.cohesion : (p.cohesion ? [p.cohesion.cohesionOfP1, p.cohesion.cohesionOfP2, p.cohesion.cohesionOfP3] : [0, 0, 0]);
+    const viscosity = Array.isArray(p.viscosity) ? p.viscosity : (p.viscosity ? [p.viscosity.viscosityOfP1, p.viscosity.viscosityOfP2, p.viscosity.viscosityOfP3] : [0, 0, 0]);
 
-    this.rastersForm.patchValue({
-      elevation: p.elevation || null,
-      hrelease1: p.hrelease1 || null, hrelease2: p.hrelease2 || null, hrelease3: p.hrelease3 || null,
-      hentrmax1: p.hentrmax1 || null, hentrmax2: p.hentrmax2 || null, hentrmax3: p.hentrmax3 || null,
-      impactarea: p.impactarea || null,
+    // Determine phases
+    let phases = p.phases ?? 3;
+    if (phases === 's,fs,f') phases = 3;
+    if (phases === 's' || phases === 'fs' || phases === 'f' || phases === 1) phases = 1;
+
+    // Time params: handle both old (tint/tend) and new (time array) formats
+    const tint = Array.isArray(p.time) ? p.time[0] : (p.tint ?? DEFAULTS.tint);
+    const tend = Array.isArray(p.time) ? p.time[1] : (p.tend ?? DEFAULTS.tend);
+
+    this.setupForm.patchValue({
+      name: project.name,
+      prefix: project.experiments[0].name,
+      cellsize: p.cellsize ?? DEFAULTS.cellsize,
+      phases: phases,
+      ctopo: p.ctopo ?? 0,
+      limiter: p.limiter ?? 1,
+      gravity: p.gravity ?? 9.81,
+      cores: p.cores ?? 8,
+      threshold1: p.thresholds?.[0] ?? DEFAULTS.thresholds[0],
+      threshold2: p.thresholds?.[1] ?? DEFAULTS.thresholds[1],
+      threshold3: p.thresholds?.[2] ?? DEFAULTS.thresholds[2],
+      threshold4: p.thresholds?.[3] ?? DEFAULTS.thresholds[3],
+      threshold5: p.thresholds?.[4] ?? DEFAULTS.thresholds[4],
+      cfl_number: p.cfl?.[0] ?? DEFAULTS.cfl[0],
+      cfl_timestep: p.cfl?.[1] ?? DEFAULTS.cfl[1],
+      slomo_time: p.slomo?.[0] ?? 1.0,
+      slomo_viscosity: p.slomo?.[1] ?? 1.0,
+      slomo_flux: p.slomo?.[2] ?? 1.0,
+      flag_m: p.flag_m ?? false,
+      sampling: p.sampling ?? 100,
+      aoi_north: p.aoicoords?.[0] ?? null,
+      aoi_south: p.aoicoords?.[1] ?? null,
+      aoi_west: p.aoicoords?.[2] ?? null,
+      aoi_east: p.aoicoords?.[3] ?? null,
     });
 
-    if (p.density) {
-      this.materialsForm.patchValue({
-        density0: p.density.densityOfP1, density1: p.density.densityOfP2, density2: p.density.densityOfP3,
+    this.terrainForm.patchValue({
+      elevation: p.elevation || null,
+      hrelease1: p.hrelease1 || null, hrelease2: p.hrelease2 || null, hrelease3: p.hrelease3 || null,
+      rhrelease1: p.rhrelease1 ?? null,
+      vhrelease: p.vhrelease || null,
+      trelease: p.trelease || null, trelstop: p.trelstop || null,
+      vinx1: p.vinx1 || null, viny1: p.viny1 || null,
+      vinx2: p.vinx2 || null, viny2: p.viny2 || null,
+      vinx3: p.vinx3 || null, viny3: p.viny3 || null,
+      hydrograph: p.hydrograph || null,
+      hydrocoords: p.hydrocoords || null,
+    });
+
+    this.materialsForm.patchValue({
+      density0: density[0], density1: density[1], density2: density[2],
+      friction0: friction[0], friction1: friction[1], friction2: friction[2],
+      friction3: friction[3], friction4: friction[4], friction5: friction[5],
+      friction6: friction[6], friction7: friction[7], friction8: friction[8],
+      cohesion0: cohesion[0], cohesion1: cohesion[1], cohesion2: cohesion[2],
+      viscosity0: viscosity[0], viscosity1: viscosity[1], viscosity2: viscosity[2],
+      deformation0: p.deformation?.[0] ?? 1.0, deformation1: p.deformation?.[1] ?? 1.0, deformation2: p.deformation?.[2] ?? 1.0,
+      clayers: p.clayers ?? 0, cdispersion: p.cdispersion ?? 0, csurface: p.csurface ?? 0,
+      drag0: p.drag?.[0] ?? DEFAULTS.drag[0], drag1: p.drag?.[1] ?? DEFAULTS.drag[1], drag2: p.drag?.[2] ?? DEFAULTS.drag[2],
+      drag3: p.drag?.[3] ?? DEFAULTS.drag[3], drag4: p.drag?.[4] ?? DEFAULTS.drag[4], drag5: p.drag?.[5] ?? DEFAULTS.drag[5],
+      vm0: p.virtualmass?.[0] ?? DEFAULTS.virtualmass[0], vm1: p.virtualmass?.[1] ?? DEFAULTS.virtualmass[1], vm2: p.virtualmass?.[2] ?? DEFAULTS.virtualmass[2],
+      slidepar0: p.slidepar?.[0] ?? 0, slidepar1: p.slidepar?.[1] ?? 0, slidepar2: p.slidepar?.[2] ?? 0,
+      slidepar3: p.slidepar?.[3] ?? 0, slidepar4: p.slidepar?.[4] ?? 0, slidepar5: p.slidepar?.[5] ?? 0,
+      shearing: p.shearing ?? 0,
+      fragmentation0: p.fragmentation?.[0] ?? 0, fragmentation1: p.fragmentation?.[1] ?? 0,
+      ambient: p.ambient ?? 0,
+    });
+
+    // Spatial overrides
+    const spatialKeys = ['phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3', 'addfri1', 'addfri2', 'addfri3', 'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3', 'cdeform', 'zfrag', 'ambdrag', 'frictiograph', 'tslide'];
+    const spatialPatch: any = {};
+    for (const key of spatialKeys) { spatialPatch[key] = p[key] || null; }
+    this.materialsForm.patchValue(spatialPatch);
+
+    this.entrainmentForm.patchValue({
+      centrainment: p.centrainment ?? 0,
+      entrainment_coeff: p.entrainment?.[0] ?? DEFAULTS.entrainment_coeff,
+      stopping_threshold: p.entrainment?.[1] ?? 0,
+      hentrmax1: p.hentrmax1 || null, hentrmax2: p.hentrmax2 || null, hentrmax3: p.hentrmax3 || null,
+      rhentrmax1: p.rhentrmax1 ?? null,
+      vhentrmax: p.vhentrmax || null,
+      centr: p.centr || null,
+      cstopping: p.cstopping ?? 0,
+      tstop: p.tstop || null,
+      cmelt: p.cmelt ?? 0,
+      transformation0: p.transformation?.[0] ?? 0, transformation1: p.transformation?.[1] ?? 0, transformation2: p.transformation?.[2] ?? 0,
+      melting0: p.melting?.[0] ?? 0, melting1: p.melting?.[1] ?? 0, melting2: p.melting?.[2] ?? 0,
+      melting3: p.melting?.[3] ?? 0.2, melting4: p.melting?.[4] ?? 0.5,
+      ctrans12: p.ctrans12 || null, ctrans13: p.ctrans13 || null, ctrans23: p.ctrans23 || null,
+      transformograph: p.transformograph || null,
+    });
+
+    this.outputForm.patchValue({
+      tint: tint, tend: tend,
+      flag_k: p.flag_k ?? false, flag_a: p.flag_a ?? false, flag_t: p.flag_t ?? false, flag_v: p.flag_v !== false,
+      impactarea: p.impactarea || null,
+      hdeposit: p.hdeposit || null,
+      zones: p.zones || null,
+      profile: p.profile || null,
+      ctrlpoints: p.ctrlpoints || null,
+    });
+
+    if (p.visualization) {
+      this.visualizationForm.patchValue({
+        viz_deform: p.visualization[0] ?? 0, viz_hflowmin: p.visualization[1] ?? 0.1,
+        viz_hflowref: p.visualization[2] ?? 5.0, viz_htsunref: p.visualization[3] ?? 5.0,
+        viz_hcontmin: p.visualization[4] ?? 1, viz_hcontmax: p.visualization[5] ?? 100,
+        viz_hcontint: p.visualization[6] ?? 2000,
+        viz_zcontmin: p.visualization[7] ?? 100, viz_zcontmax: p.visualization[8] ?? -11000,
+        viz_zcontint: p.visualization[9] ?? 9000,
+        viz_pred: p.visualization[10] ?? 100, viz_pgreen: p.visualization[11] ?? 0.60,
+        viz_pblue: p.visualization[12] ?? 0.25, viz_pexp: p.visualization[13] ?? 0.15,
+        viz_phexagg: p.visualization[14] ?? 0.2, viz_pvpath: p.visualization[15] ?? 1.0,
       });
     }
-    if (p.friction) {
-      this.materialsForm.patchValue({
-        friction0: p.friction.internalFrictionAngleOfP1, friction1: p.friction.internalFrictionAngleOfP2, friction2: p.friction.internalFrictionAngleOfP3,
-        friction3: p.friction.basalFrictionAngleOfP1,    friction4: p.friction.basalFrictionAngleOfP2,    friction5: p.friction.basalFrictionAngleOfP3,
-        friction6: p.friction.fluidFrictionOfP1,         friction7: p.friction.fluidFrictionOfP2,         friction8: p.friction.fluidFrictionOfP3,
-      });
-    }
-    if (p.cohesion) {
-      this.materialsForm.patchValue({ cohesion0: p.cohesion.cohesionOfP1, cohesion1: p.cohesion.cohesionOfP2, cohesion2: p.cohesion.cohesionOfP3 });
-    }
-    if (p.viscosity) {
-      this.materialsForm.patchValue({ viscosity0: p.viscosity.viscosityOfP1, viscosity1: p.viscosity.viscosityOfP2, viscosity2: p.viscosity.viscosityOfP3 });
-    }
+    if (p.pbgr) this.visualizationForm.patchValue({ pbgr: p.pbgr });
+    if (p.pbgg) this.visualizationForm.patchValue({ pbgg: p.pbgg });
+    if (p.pbgb) this.visualizationForm.patchValue({ pbgb: p.pbgb });
+    if (p.rscriptpath) this.visualizationForm.patchValue({ viz_rscriptpath: p.rscriptpath });
 
-    this.advancedForm.patchValue({ tint: p.tint ?? 10, tend: p.tend ?? 120 });
-
-    // make uploaded rasters of this project available in dropdowns
-    const rasterFields = ['elevation', 'hrelease1', 'hrelease2', 'hrelease3', 'hentrmax1', 'hentrmax2', 'hentrmax3', 'impactarea'];
+    // Populate raster dropdowns from loaded project
+    const rasterFields = [
+      'elevation', 'hrelease1', 'hrelease2', 'hrelease3',
+      'hentrmax1', 'hentrmax2', 'hentrmax3',
+      'impactarea', 'hdeposit', 'zones',
+      'trelease', 'trelstop',
+      'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
+      'centr', 'tstop',
+      'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+      'addfri1', 'addfri2', 'addfri3',
+      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
+      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ctrans12', 'ctrans13', 'ctrans23',
+      'pbgr', 'pbgg', 'pbgb',
+    ];
     rasterFields.forEach(field => {
       const val = p[field];
       if (val && !this.availableRasters.includes(val)) {
@@ -370,7 +853,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       }
     });
 
-    // load project files into raster dropdowns
     this.http.get<string[]>(`${APP_CONFIG.apiUrl}/project/${project.name}/files`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -381,60 +863,11 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
             }
           });
         },
-        error: () => {} // silently ignore if endpoint not available
+        error: () => {}
       });
   }
 
-  private buildApiPayload(config: SimulationConfig): any {
-    return {
-      name: config.project.name,
-      experiments: [{
-        name: config.project.prefix,
-        parameters: {
-          cellsize: config.project.cellsize,
-          phases: 's,fs,f',
-          elevation: config.rasters.elevation,
-          hrelease1: config.rasters.hrelease1 || null,
-          hrelease2: config.rasters.hrelease2 || null,
-          hrelease3: config.rasters.hrelease3 || null,
-          hentrmax1: config.rasters.hentrmax1 || null,
-          hentrmax2: config.rasters.hentrmax2 || null,
-          hentrmax3: config.rasters.hentrmax3 || null,
-          impactarea: config.rasters.impactarea || null,
-          density: {
-            densityOfP1: config.materials.density[0],
-            densityOfP2: config.materials.density[1],
-            densityOfP3: config.materials.density[2]
-          },
-          friction: {
-            internalFrictionAngleOfP1: config.materials.friction[0],
-            internalFrictionAngleOfP2: config.materials.friction[1],
-            internalFrictionAngleOfP3: config.materials.friction[2],
-            basalFrictionAngleOfP1: config.materials.friction[3],
-            basalFrictionAngleOfP2: config.materials.friction[4],
-            basalFrictionAngleOfP3: config.materials.friction[5],
-            fluidFrictionOfP1: config.materials.friction[6],
-            fluidFrictionOfP2: config.materials.friction[7],
-            fluidFrictionOfP3: config.materials.friction[8]
-          },
-          cohesion: {
-            cohesionOfP1: config.materials.cohesion[0],
-            cohesionOfP2: config.materials.cohesion[1],
-            cohesionOfP3: config.materials.cohesion[2]
-          },
-          viscosity: {
-            viscosityOfP1: config.materials.viscosity[0],
-            viscosityOfP2: config.materials.viscosity[1],
-            viscosityOfP3: config.materials.viscosity[2]
-          },
-          tint: config.advanced.tint,
-          tend: config.advanced.tend
-        }
-      }]
-    };
-  }
-
   get allFormsValid(): boolean {
-    return this.projectForm.valid && this.rastersForm.valid && this.materialsForm.valid && this.advancedForm.valid;
+    return this.setupForm.valid && this.terrainForm.valid && this.materialsForm.valid && this.entrainmentForm.valid && this.outputForm.valid;
   }
 }

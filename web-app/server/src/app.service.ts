@@ -15,7 +15,6 @@ export interface Project {
 
 export interface Experiment {
   name: string;
-  // TODO: Make interface ExperimentParameter
   parameters: any;
 }
 
@@ -29,6 +28,56 @@ export interface ProjectSummary {
   hasJson: boolean;
   hasScript: boolean;
 }
+
+// All raster parameter names recognized by r.avaflow
+const RASTER_PARAMS = [
+  'elevation', 'hrelease1', 'hrelease2', 'hrelease3',
+  'hentrmax1', 'hentrmax2', 'hentrmax3',
+  'impactarea', 'hdeposit', 'zones', 'trelease', 'trelstop',
+  'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
+  'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+  'addfri1', 'addfri2', 'addfri3',
+  'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
+  'cdeform', 'zfrag', 'ambdrag', 'tslide',
+  'centr', 'tstop',
+  'ctrans12', 'ctrans13', 'ctrans23',
+  'pbgr', 'pbgg', 'pbgb',
+];
+
+// Default values for array parameters
+const ARRAY_DEFAULTS: Record<string, number[]> = {
+  friction:       [40, 20, 0, 20, 10, 0, 0, 0, 0.05],
+  cohesion:       [0, 0, 0],
+  viscosity:      [0, 0, 0],
+  deformation:    [1, 1, 1],
+  slidepar:       [0, 0, 0, 0, 0, 0],
+  shearing:       [0],
+  fragmentation:  [0, 0],
+  ambient:        [0],
+  drag:           [1, 3, 1, 0.1, 1, 1],
+  virtualmass:    [10, 0.12, 1],
+  entrainment:    [-7.0, 0.0],
+  transformation: [0, 0, 0],
+  melting:        [0, 0, 0, 0.2, 0.5],
+  thresholds:     [0.1, 10000, 10000, 1.0, 0.000001],
+  cfl:            [0.4, 0.001],
+  slomo:          [1.0, 1.0, 1.0],
+};
+
+// Default values for scalar parameters
+const SCALAR_DEFAULTS: Record<string, number> = {
+  ctopo: 0,
+  limiter: 1,
+  gravity: 9.81,
+  cores: 8,
+  clayers: 0,
+  cdispersion: 0,
+  csurface: 0,
+  centrainment: 0,
+  cstopping: 0,
+  cmelt: 0,
+  sampling: 100,
+};
 
 @Injectable()
 export class AppService {
@@ -47,159 +96,349 @@ export class AppService {
     return 'Hello World!';
   }
 
-  createInitialCommands(experiment: Experiment): string {
-    const {
-      elevation,
-      hrelease1,
-      hrelease2,
-      hrelease3,
-      hentrmax1,
-      hentrmax2,
-      hentrmax3,
-    } = experiment.parameters;
+  // --- Validation helpers ---
 
-    const stripExt = (f: string) => f.replace(/\.tiff?$/i, '');
-    const importLine = (f: string) =>
-      `r.in.gdal -o --overwrite input=DATA/${f} output=${stripExt(f)}\n`;
+  private sanitizeProjectName(name: string): string {
+    if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+      throw new Error(
+        `Invalid project name "${name}": only alphanumeric characters and underscores are allowed`,
+      );
+    }
+    return name;
+  }
 
-    const isValid = (v: any) => v && v !== 'null';
+  private sanitizeFilename(filename: string): string {
+    if (!/^[a-zA-Z0-9_./\-]+$/.test(filename)) {
+      throw new Error(
+        `Invalid filename "${filename}": only alphanumeric characters, underscores, dots, slashes, and hyphens are allowed`,
+      );
+    }
+    return filename;
+  }
 
-    let cmds = `g.region -d\n`;
-    cmds += importLine(elevation);
-    if (isValid(hrelease1)) cmds += importLine(hrelease1);
-    if (isValid(hrelease2)) cmds += importLine(hrelease2);
-    if (isValid(hrelease3)) cmds += importLine(hrelease3);
-    if (isValid(hentrmax1)) cmds += importLine(hentrmax1);
-    if (isValid(hentrmax2)) cmds += importLine(hentrmax2);
-    if (isValid(hentrmax3)) cmds += importLine(hentrmax3);
-    cmds += `\ng.region -s rast=${stripExt(elevation)}\n\n`;
+  private validateNumber(value: any, paramName: string): number {
+    const num = Number(value);
+    if (isNaN(num) || !isFinite(num)) {
+      throw new Error(`Invalid numeric value for ${paramName}: ${value}`);
+    }
+    return num;
+  }
+
+  private stripExt(filename: string): string {
+    return filename.replace(/\.(tiff?|asc)$/i, '');
+  }
+
+  // --- Old format migration ---
+
+  private migrateParams(params: any): any {
+    // Convert old nested density object to array
+    if (params.density && !Array.isArray(params.density)) {
+      params.density = [
+        params.density.densityOfP1 ?? 2700,
+        params.density.densityOfP2 ?? 1800,
+        params.density.densityOfP3 ?? 1000,
+      ];
+    }
+    // Convert old nested friction object to array
+    if (params.friction && !Array.isArray(params.friction)) {
+      params.friction = [
+        params.friction.internalFrictionAngleOfP1 ?? 40,
+        params.friction.internalFrictionAngleOfP2 ?? 20,
+        params.friction.internalFrictionAngleOfP3 ?? 0,
+        params.friction.basalFrictionAngleOfP1 ?? 20,
+        params.friction.basalFrictionAngleOfP2 ?? 10,
+        params.friction.basalFrictionAngleOfP3 ?? 0,
+        params.friction.fluidFrictionOfP1 ?? 0,
+        params.friction.fluidFrictionOfP2 ?? 0,
+        params.friction.fluidFrictionOfP3 ?? 0.05,
+      ];
+    }
+    // Convert old nested cohesion object to array
+    if (params.cohesion && !Array.isArray(params.cohesion)) {
+      params.cohesion = [
+        params.cohesion.cohesionOfP1 ?? 0,
+        params.cohesion.cohesionOfP2 ?? 0,
+        params.cohesion.cohesionOfP3 ?? 0,
+      ];
+    }
+    // Convert old nested viscosity object to array
+    if (params.viscosity && !Array.isArray(params.viscosity)) {
+      params.viscosity = [
+        params.viscosity.viscosityOfP1 ?? 0,
+        params.viscosity.viscosityOfP2 ?? 0,
+        params.viscosity.viscosityOfP3 ?? 0,
+      ];
+    }
+    // Convert old tint/tend to time array
+    if (params.tint != null && params.tend != null && !params.time) {
+      params.time = [params.tint, params.tend];
+    }
+    // Convert old phases string to number
+    if (params.phases === 's,fs,f') params.phases = 3;
+    if (params.phases === 's') params.phases = 1;
+
+    return params;
+  }
+
+  // --- Script generation ---
+
+  private collectRasterFiles(experiments: Experiment[]): string[] {
+    const files = new Set<string>();
+    for (const exp of experiments) {
+      const p = exp.parameters;
+      for (const paramName of RASTER_PARAMS) {
+        const val = p[paramName];
+        if (val && val !== 'null') {
+          files.add(this.sanitizeFilename(val));
+        }
+      }
+    }
+    return Array.from(files);
+  }
+
+  createInitialCommands(
+    projectName: string,
+    experiments: Experiment[],
+  ): string {
+    const rasterFiles = this.collectRasterFiles(experiments);
+    const elevationFile = experiments[0]?.parameters?.elevation;
+    if (!elevationFile) {
+      throw new Error('Elevation raster is required');
+    }
+
+    const safeName = this.sanitizeProjectName(projectName);
+
+    let cmds = '';
+    cmds += `# If DATA is in a nested subdirectory, create a symlink\n`;
+    cmds += `if [ ! -d "DATA" ] && [ -d "${safeName}/DATA" ]; then\n`;
+    cmds += `  ln -sf ${safeName}/DATA DATA\n`;
+    cmds += `fi\n\n`;
+
+    cmds += `g.region -d\n`;
+    for (const file of rasterFiles) {
+      cmds += `r.in.gdal -o --overwrite input=DATA/${file} output=${this.stripExt(file)}\n`;
+    }
+    cmds += `\ng.region -s rast=${this.stripExt(this.sanitizeFilename(elevationFile))}\n`;
 
     return cmds;
   }
 
   createExperiment(experiment: Experiment): string {
-    const {
-      cellsize,
-      phases,
-      elevation,
-      hrelease1,
-      hrelease2,
-      hrelease3,
-      hentrmax1,
-      hentrmax2,
-      hentrmax3,
-      density,
-      friction,
-      viscosity,
-      impactarea,
-      tint,
-      tend,
-    } = experiment.parameters;
+    const p = this.migrateParams({ ...experiment.parameters });
 
-    if (!density) {
-      throw new Error('Density is not defined in the experiment parameters.');
+    // Validate required parameters
+    if (!p.elevation) {
+      throw new Error('Elevation raster is required');
+    }
+    if (!p.density || !Array.isArray(p.density) || p.density.length < 3) {
+      throw new Error('Density array with 3 values is required');
+    }
+    if (!p.time || !Array.isArray(p.time) || p.time.length < 2) {
+      throw new Error('Time array [tint, tend] is required');
     }
 
-    const stripExt = (f: string) => f.replace(/\.tiff?$/i, '');
+    // 1. Build flags
+    let flags = '-e';
+    if (p.flag_v) flags += ' -v';
+    if (p.flag_k) flags += ' -k';
+    if (p.flag_a) flags += ' -a';
+    if (p.flag_t) flags += ' -t';
+    if (p.flag_m) flags += ' -m';
 
-    const { densityOfP1, densityOfP2, densityOfP3 } = density;
-    const densityString = `${densityOfP1},${densityOfP2},${densityOfP3}`;
+    // 2. Phases mapping
+    const phasesStr = p.phases === 1 ? 's' : 's,fs,f';
 
-    const elevName = elevation ? stripExt(elevation) : null;
+    // Start building command parts (will be joined with line continuations)
+    const parts: string[] = [];
 
-    let cmd = `r.avaflow -e -v prefix=${experiment.name} cellsize=${cellsize} phases=${phases}`;
+    // Flags + prefix + cellsize + phases (first line)
+    parts.push(
+      `r.avaflow ${flags} prefix=${this.sanitizeProjectName(experiment.name)} cellsize=${this.validateNumber(p.cellsize, 'cellsize')} phases=${phasesStr}`,
+    );
 
-    if (elevName) cmd += ` elevation=${elevName}`;
+    // 3. Elevation (always required)
+    parts.push(`  elevation=${this.stripExt(this.sanitizeFilename(p.elevation))}`);
 
-    const optionalRaster = (paramName: string, value: string | null | undefined) => {
-      if (value && value !== 'null') cmd += ` ${paramName}=${stripExt(value)}`;
+    // 4. Optional raster parameters (in canonical order, skip elevation)
+    const optionalRasters = RASTER_PARAMS.filter((n) => n !== 'elevation');
+    for (const paramName of optionalRasters) {
+      const val = p[paramName];
+      if (val && val !== 'null') {
+        parts.push(
+          `  ${paramName}=${this.stripExt(this.sanitizeFilename(val))}`,
+        );
+      }
+    }
+
+    // 5. Scalar controls (only if different from default)
+    const scalarParams = [
+      'ctopo', 'limiter', 'gravity', 'cores',
+      'clayers', 'cdispersion', 'csurface',
+      'centrainment', 'cstopping', 'cmelt',
+    ];
+    for (const paramName of scalarParams) {
+      if (p[paramName] != null) {
+        const val = this.validateNumber(p[paramName], paramName);
+        if (val !== SCALAR_DEFAULTS[paramName]) {
+          parts.push(`  ${paramName}=${val}`);
+        }
+      }
+    }
+
+    // sampling: only emitted if flag_m is true and value differs from default
+    if (p.flag_m && p.sampling != null) {
+      const val = this.validateNumber(p.sampling, 'sampling');
+      if (val !== SCALAR_DEFAULTS.sampling) {
+        parts.push(`  sampling=${val}`);
+      }
+    }
+
+    // 6. Array material parameters
+    // Helper: check if array differs from its default
+    const arraysEqual = (a: number[], b: number[]): boolean => {
+      if (a.length !== b.length) return false;
+      return a.every((v, i) => v === b[i]);
     };
 
-    optionalRaster('hrelease1', hrelease1);
-    optionalRaster('hrelease2', hrelease2);
-    optionalRaster('hrelease3', hrelease3);
-    optionalRaster('hentrmax1', hentrmax1);
-    optionalRaster('hentrmax2', hentrmax2);
-    optionalRaster('hentrmax3', hentrmax3);
-    optionalRaster('impactarea', impactarea);
+    const emitArray = (name: string, values: number[] | null | undefined) => {
+      if (!values || !Array.isArray(values)) return;
+      values.forEach((v, i) => this.validateNumber(v, `${name}[${i}]`));
+      parts.push(`  ${name}=${values.join(',')}`);
+    };
 
-    cmd += ` density=${densityString}`;
+    const emitArrayIfChanged = (
+      name: string,
+      values: number[] | null | undefined,
+    ) => {
+      if (!values || !Array.isArray(values)) return;
+      const defaults = ARRAY_DEFAULTS[name];
+      if (!defaults || !arraysEqual(values, defaults)) {
+        emitArray(name, values);
+      }
+    };
 
-    if (friction) {
-      const vals = [
-        friction.internalFrictionAngleOfP1,
-        friction.internalFrictionAngleOfP2,
-        friction.internalFrictionAngleOfP3,
-        friction.basalFrictionAngleOfP1,
-        friction.basalFrictionAngleOfP2,
-        friction.basalFrictionAngleOfP3,
-        friction.fluidFrictionOfP1,
-        friction.fluidFrictionOfP2,
-        friction.fluidFrictionOfP3,
-      ];
-      if (vals.some((v) => v != null)) {
-        cmd += ` friction=${vals.map((v) => v ?? 0).join(',')}`;
+    // density — ALWAYS emit
+    emitArray('density', p.density);
+
+    // Other array params — emit only when changed from defaults
+    emitArrayIfChanged('friction', p.friction);
+    emitArrayIfChanged('cohesion', p.cohesion);
+    emitArrayIfChanged('viscosity', p.viscosity);
+    emitArrayIfChanged('deformation', p.deformation);
+    emitArrayIfChanged('slidepar', p.slidepar);
+    emitArrayIfChanged('shearing', p.shearing);
+    emitArrayIfChanged('fragmentation', p.fragmentation);
+    emitArrayIfChanged('ambient', p.ambient);
+    emitArrayIfChanged('drag', p.drag);
+    emitArrayIfChanged('virtualmass', p.virtualmass);
+
+    // entrainment: emit if centrainment=1 OR values differ from default
+    if (p.entrainment && Array.isArray(p.entrainment)) {
+      const defaults = ARRAY_DEFAULTS.entrainment;
+      if (p.centrainment === 1 || !arraysEqual(p.entrainment, defaults)) {
+        emitArray('entrainment', p.entrainment);
       }
     }
 
-    if (viscosity) {
-      const vals = [
-        viscosity.viscosityOfP1,
-        viscosity.viscosityOfP2,
-        viscosity.viscosityOfP3,
-      ];
-      if (vals.some((v) => v != null)) {
-        cmd += ` viscosity=${vals.map((v) => v ?? 0).join(',')}`;
+    // thresholds, cfl, slomo
+    emitArrayIfChanged('thresholds', p.thresholds);
+    emitArrayIfChanged('cfl', p.cfl);
+    emitArrayIfChanged('slomo', p.slomo);
+
+    // 7. Phase transformation
+    emitArrayIfChanged('transformation', p.transformation);
+
+    // melting: emit if cmelt=1 OR values differ from default
+    if (p.melting && Array.isArray(p.melting)) {
+      const defaults = ARRAY_DEFAULTS.melting;
+      if (p.cmelt === 1 || !arraysEqual(p.melting, defaults)) {
+        emitArray('melting', p.melting);
       }
     }
 
-    cmd += ` time=${tint},${tend}\n`;
+    // 8. Special parameters
+    if (p.aoicoords && Array.isArray(p.aoicoords) && p.aoicoords.length === 4) {
+      p.aoicoords.forEach((v: any, i: number) =>
+        this.validateNumber(v, `aoicoords[${i}]`),
+      );
+      parts.push(`  aoicoords=${p.aoicoords.join(',')}`);
+    }
 
-    return cmd;
+    if (p.rhrelease1 != null) {
+      parts.push(`  rhrelease1=${this.validateNumber(p.rhrelease1, 'rhrelease1')}`);
+    }
+    if (p.vhrelease && Array.isArray(p.vhrelease)) {
+      parts.push(`  vhrelease=${p.vhrelease.join(',')}`);
+    }
+    if (p.rhentrmax1 != null) {
+      parts.push(`  rhentrmax1=${this.validateNumber(p.rhentrmax1, 'rhentrmax1')}`);
+    }
+    if (p.vhentrmax && Array.isArray(p.vhentrmax)) {
+      parts.push(`  vhentrmax=${p.vhentrmax.join(',')}`);
+    }
+
+    // 9. Text parameters
+    const textParams = [
+      'hydrograph', 'hydrocoords', 'frictiograph',
+      'transformograph', 'profile', 'ctrlpoints',
+    ];
+    for (const paramName of textParams) {
+      const val = p[paramName];
+      if (val && val !== 'null' && String(val).trim() !== '') {
+        parts.push(`  ${paramName}=${String(val).trim()}`);
+      }
+    }
+
+    // 10. Visualization
+    if (p.visualization && Array.isArray(p.visualization)) {
+      parts.push(`  visualization=${p.visualization.join(',')}`);
+    }
+
+    // 11. time — ALWAYS LAST
+    const tint = this.validateNumber(p.time[0], 'time[0]');
+    const tend = this.validateNumber(p.time[1], 'time[1]');
+    parts.push(`  time=${tint},${tend}`);
+
+    // Join with backslash-newline continuations
+    return parts.join(' \\\n') + '\n';
   }
 
   async createBashScriptFile(
     projectData: Project,
   ): Promise<{ message: string; path: string }> {
-    // If DATA is in a nested subdirectory, create a symlink so r.in.gdal finds it
-    const symlinkSnippet =
-      `# If DATA is in a nested subdirectory, create a symlink\n` +
-      `if [ ! -d "DATA" ] && [ -d "${projectData.name}/DATA" ]; then\n` +
-      `  ln -sf ${projectData.name}/DATA DATA\n` +
-      `fi\n\n`;
+    const safeName = this.sanitizeProjectName(projectData.name);
+
+    // Migrate params for all experiments
+    for (const exp of projectData.experiments) {
+      exp.parameters = this.migrateParams(exp.parameters);
+    }
 
     const initialCommands =
       projectData.experiments.length > 0
-        ? this.createInitialCommands(projectData.experiments[0])
+        ? this.createInitialCommands(safeName, projectData.experiments)
         : '';
 
-    // Создайте r.avaflow команды для каждого эксперимента
     const experimentsScripts = projectData.experiments.map(
       (experiment, index) => {
         const experimentScript = this.createExperiment(experiment);
-        return `# ${index + 1} ${experiment.name}\n` + experimentScript;
+        return `\n# ${index + 1} ${this.sanitizeProjectName(experiment.name)}\n` + experimentScript;
       },
     );
 
     const script =
-      symlinkSnippet + initialCommands + experimentsScripts.join('\n') + '\ng.region -d';
+      initialCommands + experimentsScripts.join('') + '\ng.region -d\n';
 
-    // Уберите отступы перед первым экспериментом
-    const scriptWithoutInitialIndent = script.replace(/\n\n# 1/, '\n# 1');
-
-    const projectFolder = projectData.name; // используйте имя проекта
     const projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
-    const projectPath = path.join(projectsRoot, projectFolder);
+    const projectPath = path.join(projectsRoot, safeName);
 
     if (!fs.existsSync(projectPath)) {
       fs.mkdirSync(projectPath, { recursive: true });
     }
 
-    const scriptPath = path.join(projectPath, `${projectData.name}.sh`); // исправлено
-    const jsonPath = path.join(projectPath, `${projectData.name}.json`); // исправлено
+    const scriptPath = path.join(projectPath, `${safeName}.sh`);
+    const jsonPath = path.join(projectPath, `${safeName}.json`);
 
-    // Сохраните JSON-файл с параметрами объекта
-    fs.writeFileSync(jsonPath, JSON.stringify(projectData, null, 2)); // исправлено
+    fs.writeFileSync(jsonPath, JSON.stringify(projectData, null, 2));
 
     return new Promise((resolve, reject) => {
       fs.writeFile(scriptPath, script, (err) => {
@@ -227,8 +466,14 @@ export class AppService {
   }
 
   async getProjectByName(projectName: string): Promise<Project> {
-    const jsonPath = path.join(this.projectsRoot, projectName, `${projectName}.json`);
-    return this.readJsonFile(jsonPath);
+    const safeName = this.sanitizeProjectName(projectName);
+    const jsonPath = path.join(this.projectsRoot, safeName, `${safeName}.json`);
+    const project: Project = await this.readJsonFile(jsonPath);
+    // Migrate old format when loading
+    for (const exp of project.experiments) {
+      exp.parameters = this.migrateParams(exp.parameters);
+    }
+    return project;
   }
 
   async readJsonFile(filePath: string): Promise<any> {
