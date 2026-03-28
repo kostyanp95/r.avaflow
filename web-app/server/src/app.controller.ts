@@ -23,6 +23,11 @@ export class AppController {
     this.appService.checkProjectDataDirectory();
   }
 
+  @Get('health')
+  getHealth(): { status: string; timestamp: number } {
+    return { status: 'ok', timestamp: Date.now() };
+  }
+
   @Get()
   getHello(): string {
     return this.appService.getHello();
