@@ -8,7 +8,7 @@ import { AppGateway } from './app.gateway';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'static'),
+      rootPath: join(__dirname, '..', 'static'),
       exclude: ['/api*', '/socket.io*'],
     }),
   ],
