@@ -80,10 +80,19 @@ RUN R -q -e 'install.packages(c("stats","codetools","Rcpp","terra","lattice","sp
 # Build r.avaflow.40G (system module via GRASS make, with OpenMP)
 WORKDIR /build
 COPY r.avaflow.40G/ ./r.avaflow.40G/
+# Clean build artifacts and GPU-only files that break CPU-only builds
+RUN cd /build/r.avaflow.40G/r.avaflow.main && \
+    find . -name '*.o' -delete && \
+    rm -rf OBJ.* && \
+    rm -f thrust_sort.cpp && \
+    rm -f main.c.bak* main.c.new* && \
+    find . -maxdepth 1 -name 'r.avaflow.main.*' ! -name '*.html' ! -name '*.c' -delete
 RUN cd /build/r.avaflow.40G && \
     make MODULE_TOPDIR=/usr/lib/grass84 \
          EXTRA_CFLAGS="-fopenmp -march=x86-64 -O3 -fno-math-errno -funroll-loops" \
-         -j$(nproc)
+         -j$(nproc) && \
+    test -f /usr/lib/grass84/bin/r.avaflow.main || \
+      { echo "FATAL: r.avaflow.main binary not found after build"; exit 1; }
 
 # Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
