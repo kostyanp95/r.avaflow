@@ -35,12 +35,13 @@ import {NzMessageModule} from 'ng-zorro-antd/message';
 import {NzTableModule} from 'ng-zorro-antd/table';
 import {NzPopconfirmModule} from 'ng-zorro-antd/popconfirm';
 import {NzProgressModule} from 'ng-zorro-antd/progress';
+import {NzModalModule} from 'ng-zorro-antd/modal';
 import {HttpClientModule} from '@angular/common/http';
 import {TranslateModule} from '@ngx-translate/core';
 
 @NgModule({
   declarations: [HomeComponent, ProjectFormComponent, SimulationWizardComponent, SimulationStatusComponent, SimulationResultsComponent],
-    imports: [CommonModule, BrowserAnimationsModule, SharedModule, HomeRoutingModule, HttpClientModule, TranslateModule, NzButtonModule, NzIconModule, NzLayoutModule, NzMenuModule, NzTabsModule, NzWaveModule, NzTypographyModule, NzCollapseModule, ReactiveFormsModule, NzFormModule, NzSwitchModule, NzRadioModule, NzSelectModule, NzToolTipModule, NzInputModule, NzAffixModule, NzUploadModule, NzStepsModule, NzInputNumberModule, NzDescriptionsModule, NzBadgeModule, NzTagModule, NzMessageModule, NzTableModule, NzPopconfirmModule, NzProgressModule]
+    imports: [CommonModule, BrowserAnimationsModule, SharedModule, HomeRoutingModule, HttpClientModule, TranslateModule, NzButtonModule, NzIconModule, NzLayoutModule, NzMenuModule, NzTabsModule, NzWaveModule, NzTypographyModule, NzCollapseModule, ReactiveFormsModule, NzFormModule, NzSwitchModule, NzRadioModule, NzSelectModule, NzToolTipModule, NzInputModule, NzAffixModule, NzUploadModule, NzStepsModule, NzInputNumberModule, NzDescriptionsModule, NzBadgeModule, NzTagModule, NzMessageModule, NzTableModule, NzPopconfirmModule, NzProgressModule, NzModalModule]
 })
 export class HomeModule {
 }

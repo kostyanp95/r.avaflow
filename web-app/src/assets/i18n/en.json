@@ -393,11 +393,22 @@
     "files": "files",
     "filename": "Filename",
     "type": "Type",
+    "size": "Size",
     "noProject": "No project selected",
     "noFiles": "No results yet",
     "noFilesHint": "Run a simulation to generate output files. Results will appear here automatically.",
     "exitSuccess": "Simulation completed successfully",
-    "exitError": "Simulation failed"
+    "exitError": "Simulation failed",
+    "visualizations": "Visualizations",
+    "dataFiles": "Data files",
+    "downloadAll": "Download all results (ZIP)",
+    "downloadZip": "Download ZIP",
+    "totalFiles": "files",
+    "noResults": "No simulation results",
+    "simulationOutput": "Simulation output",
+    "preview": "Preview",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
   },
   "tabs": {
     "parameters": "Parameters",
