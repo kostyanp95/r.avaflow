@@ -41,7 +41,7 @@ export class SimulationResultsComponent implements OnInit, OnChanges, OnDestroy 
     this.ws.onSimulationDone()
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
-        this.exitStatus = data.success ? 'Success' : `Error (exit code: ${data.exitCode})`;
+        this.exitStatus = (data.success && data.exitCode === 0) ? 'Success' : `Error (exit code: ${data.exitCode})`;
         if (data.projectName === this.projectName) {
           this.loadResults();
         }

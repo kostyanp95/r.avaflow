@@ -216,6 +216,15 @@
   min-height: 200px;
 }
 
+.log-error {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+.log-warning {
+  color: #faad14;
+}
+
 .log-empty {
   display: flex;
   align-items: center;
