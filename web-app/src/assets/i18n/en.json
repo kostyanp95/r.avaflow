@@ -386,7 +386,8 @@
     "simulationProgress": "Simulation progress",
     "run": "Run",
     "stop": "Stop",
-    "clear": "Clear"
+    "clear": "Clear",
+    "logCounter": "Showing last {{ shown }} of {{ total }} lines"
   },
   "results": {
     "outputFiles": "Output files",

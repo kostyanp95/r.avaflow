@@ -27,6 +27,9 @@
     <div class="terminal-header">
       <span class="terminal-dot" [class.inactive]="status !== 'running'"></span>
       <span class="terminal-title">{{ 'modeling.output' | translate }}</span>
+      <span class="terminal-counter" *ngIf="totalLinesReceived > 0">
+        {{ 'modeling.logCounter' | translate:{ shown: logLines.length, total: totalLinesReceived } }}
+      </span>
     </div>
     <div class="log-container" #logContainer>
       <pre class="log-output" *ngIf="logLines.length > 0"><ng-container *ngFor="let line of logLines"><span [class.log-error]="isErrorLine(line)" [class.log-warning]="isWarningLine(line)">{{ line }}</span>
