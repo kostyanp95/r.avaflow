@@ -2,7 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { diskStorage } from 'multer';
 
-const projectsRoot = path.join(__dirname, '..', '..', '..', 'projects');
+const projectsRoot =
+  process.env.AVAFLOW_PROJECTS_PATH ||
+  path.resolve(__dirname, '..', '..', '..', 'projects');
 const defaultUploadsPath = path.join(projectsRoot, 'uploads');
 
 if (!fs.existsSync(defaultUploadsPath)) {
@@ -12,6 +14,9 @@ if (!fs.existsSync(defaultUploadsPath)) {
 export const storageOptions = diskStorage({
   destination: (req, file, cb) => {
     const projectName = req.body?.projectName;
+    if (projectName && !/^[a-zA-Z0-9_]+$/.test(projectName)) {
+      return cb(new Error(`Invalid project name: ${projectName}`), '');
+    }
     let dest: string;
     if (projectName) {
       dest = path.join(projectsRoot, projectName, 'DATA');

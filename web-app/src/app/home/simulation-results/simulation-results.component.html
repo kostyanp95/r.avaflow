@@ -25,46 +25,142 @@
     </div>
 
     <!-- Empty state -->
-    <div *ngIf="files.length === 0 && !loading" class="empty-state">
+    <div *ngIf="resultFiles.length === 0 && !loading" class="empty-state">
       <span class="empty-icon" nz-icon nzType="inbox" nzTheme="outline"></span>
       <span class="empty-title">{{ 'results.noFiles' | translate }}</span>
       <span class="empty-description">{{ 'results.noFilesHint' | translate }}</span>
     </div>
 
-    <!-- File table -->
-    <ng-container *ngIf="files.length > 0 && !loading">
-      <div class="results-header">
-        <h3>{{ 'results.outputFiles' | translate }}</h3>
-        <span class="file-count">{{ files.length }} {{ 'results.files' | translate }}</span>
+    <!-- Results content -->
+    <ng-container *ngIf="resultFiles.length > 0 && !loading">
+
+      <!-- Download All bar -->
+      <div class="results-actions">
+        <button nz-button nzType="primary" nzSize="large" (click)="downloadAllZip()" [nzLoading]="isDownloading">
+          <span nz-icon nzType="download"></span>
+          {{ 'results.downloadAll' | translate }}
+        </button>
+        <span class="results-summary">
+          {{ resultFiles.length }} {{ 'results.totalFiles' | translate }}, {{ formatSize(totalSize) }}
+        </span>
       </div>
 
-      <div class="files-table-wrap">
-        <nz-table [nzData]="files" [nzShowPagination]="false" nzSize="small" nzBordered>
-          <thead>
-            <tr>
-              <th>{{ 'results.filename' | translate }}</th>
-              <th nzWidth="120px">{{ 'results.type' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let file of files">
-              <td><span class="filename-cell">{{ file.filename }}</span></td>
-              <td>
-                <span class="file-type-tag"
-                      [class.type-raster]="file.type === 'raster'"
-                      [class.type-csv]="file.type === 'csv'"
-                      [class.type-image]="file.type === 'image'"
-                      [class.type-script]="file.type === 'script'"
-                      [class.type-json]="file.type === 'json'"
-                      [class.type-text]="file.type === 'text'"
-                      [class.type-other]="file.type === 'other'">
-                  {{ file.type }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+      <!-- Section: Visualizations (GIF + PNG) -->
+      <div class="results-section" *ngIf="imageFiles.length > 0">
+        <div class="section-header">
+          <h3>
+            <span nz-icon nzType="picture" nzTheme="outline"></span>
+            {{ 'results.visualizations' | translate }}
+          </h3>
+          <span class="section-count">{{ imageFiles.length }}</span>
+        </div>
+
+        <div class="results-grid">
+          <div class="result-card"
+               *ngFor="let file of imageFiles"
+               [class.animation]="file.type === 'animation'"
+               (click)="openPreview(file)">
+            <div class="result-thumbnail">
+              <img [src]="getFileUrl(file)" [alt]="file.name" loading="lazy" />
+              <div class="result-overlay">
+                <span nz-icon nzType="zoom-in" nzTheme="outline"></span>
+              </div>
+              <span class="file-type-badge" *ngIf="file.type === 'animation'">GIF</span>
+            </div>
+            <div class="result-info">
+              <span class="result-name" [title]="file.name">{{ file.name }}</span>
+              <span class="result-size">{{ formatSize(file.size) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Section: Data files (txt, csv, asc) -->
+      <div class="results-section" *ngIf="dataFiles.length > 0">
+        <div class="section-header">
+          <h3>
+            <span nz-icon nzType="file-text" nzTheme="outline"></span>
+            {{ 'results.dataFiles' | translate }}
+          </h3>
+          <span class="section-count">{{ dataFiles.length }}</span>
+        </div>
+
+        <div class="files-table-wrap">
+          <nz-table [nzData]="dataFiles" [nzShowPagination]="false" nzSize="small" nzBordered>
+            <thead>
+              <tr>
+                <th>{{ 'results.filename' | translate }}</th>
+                <th nzWidth="120px">{{ 'results.size' | translate }}</th>
+                <th nzWidth="80px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let file of dataFiles">
+                <td><span class="filename-cell">{{ file.name }}</span></td>
+                <td><span class="size-cell">{{ formatSize(file.size) }}</span></td>
+                <td>
+                  <button nz-button nzType="link" nzSize="small" (click)="downloadFile(file)">
+                    <span nz-icon nzType="download"></span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+
     </ng-container>
   </div>
 </ng-container>
+
+<!-- Fullscreen preview modal -->
+<nz-modal
+  [(nzVisible)]="previewVisible"
+  [nzWidth]="'95vw'"
+  [nzBodyStyle]="{ padding: '0', background: '#000' }"
+  [nzFooter]="null"
+  [nzClosable]="true"
+  (nzOnCancel)="closePreview()"
+  nzClassName="preview-modal"
+  [nzTitle]="previewFile?.name || ''">
+  <div class="preview-container" *nzModalContent>
+    <img
+      [src]="previewUrl"
+      [alt]="previewFile?.name || ''"
+      [class.zoomed]="zoomLevel > 1"
+      [style.transform]="'scale(' + zoomLevel + ')'"
+      (click)="zoomLevel === 1 ? zoomIn() : resetZoom()" />
+
+    <!-- Navigation arrows -->
+    <button class="nav-arrow nav-prev" *ngIf="imageFiles.length > 1" (click)="prevImage()">
+      <span nz-icon nzType="left" nzTheme="outline"></span>
+    </button>
+    <button class="nav-arrow nav-next" *ngIf="imageFiles.length > 1" (click)="nextImage()">
+      <span nz-icon nzType="right" nzTheme="outline"></span>
+    </button>
+
+    <!-- Controls bar -->
+    <div class="preview-controls">
+      <button nz-button nzType="primary" nzGhost nzSize="small" (click)="zoomIn()"
+              nz-tooltip [nzTooltipTitle]="'results.zoomIn' | translate">
+        <span nz-icon nzType="zoom-in"></span>
+      </button>
+      <button nz-button nzType="primary" nzGhost nzSize="small" (click)="zoomOut()"
+              nz-tooltip [nzTooltipTitle]="'results.zoomOut' | translate">
+        <span nz-icon nzType="zoom-out"></span>
+      </button>
+      <button nz-button nzType="primary" nzGhost nzSize="small" (click)="resetZoom()">
+        <span nz-icon nzType="redo"></span>
+      </button>
+      <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
+      <button nz-button nzType="primary" nzGhost nzSize="small" (click)="downloadFile(previewFile!)">
+        <span nz-icon nzType="download"></span>
+      </button>
+    </div>
+
+    <!-- Image counter -->
+    <div class="preview-counter" *ngIf="imageFiles.length > 1">
+      {{ currentImageIndex + 1 }} / {{ imageFiles.length }}
+    </div>
+  </div>
+</nz-modal>

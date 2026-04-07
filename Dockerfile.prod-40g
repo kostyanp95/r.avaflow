@@ -82,7 +82,7 @@ WORKDIR /build
 COPY r.avaflow.40G/ ./r.avaflow.40G/
 RUN cd /build/r.avaflow.40G && \
     make MODULE_TOPDIR=/usr/lib/grass84 \
-         EXTRA_CFLAGS="-fopenmp -march=native -O3 -fno-math-errno -funroll-loops" \
+         EXTRA_CFLAGS="-fopenmp -march=x86-64 -O3 -fno-math-errno -funroll-loops" \
          -j$(nproc)
 
 # Node.js 20

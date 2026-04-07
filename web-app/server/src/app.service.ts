@@ -29,6 +29,13 @@ export interface ProjectSummary {
   hasScript: boolean;
 }
 
+export interface ResultFile {
+  name: string;
+  path: string;
+  type: 'image' | 'animation' | 'data' | 'raster';
+  size: number;
+}
+
 // All raster parameter names recognized by r.avaflow
 const RASTER_PARAMS = [
   'elevation', 'hrelease1', 'hrelease2', 'hrelease3',
@@ -244,8 +251,11 @@ export class AppService {
     if (p.flag_m) flags += ' -m';
 
     // 2. Phases mapping
+    // r.avaflow.40G uses numeric phases (1, 3); classic r.avaflow uses string (s, s,fs,f)
     let phasesStr: string;
-    if (typeof p.phases === 'string') {
+    if (this.avaflowModule === 'r.avaflow.40G') {
+      phasesStr = String(p.phases ?? 3);
+    } else if (typeof p.phases === 'string') {
       phasesStr = p.phases;
     } else {
       phasesStr = p.phases === 1 ? 's' : 's,fs,f';
@@ -392,8 +402,8 @@ export class AppService {
       }
     }
 
-    // 10. Visualization
-    if (p.visualization && Array.isArray(p.visualization)) {
+    // 10. Visualization — only emit if explicitly provided and flagged
+    if (p.visualizationExplicit && p.visualization && Array.isArray(p.visualization)) {
       parts.push(`  visualization=${p.visualization.join(',')}`);
     }
 
@@ -634,5 +644,88 @@ export class AppService {
         filesUploaded: filesInfo,
       });
     }
+  }
+
+  private getResultFileType(filename: string): ResultFile['type'] {
+    const ext = path.extname(filename).toLowerCase();
+    if (ext === '.gif') return 'animation';
+    if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') return 'image';
+    if (ext === '.asc' || ext === '.tif' || ext === '.tiff') return 'raster';
+    return 'data';
+  }
+
+  async listResultFiles(projectName: string): Promise<ResultFile[]> {
+    const safeName = this.sanitizeProjectName(projectName);
+    const projectPath = path.join(this.projectsRoot, safeName);
+
+    if (!fs.existsSync(projectPath)) {
+      throw new Error(`Project "${safeName}" not found`);
+    }
+
+    const resultExtensions = ['.gif', '.png', '.jpg', '.jpeg', '.txt', '.csv', '.asc', '.tif', '.tiff'];
+    const isResultFile = (f: string) =>
+      resultExtensions.includes(path.extname(f).toLowerCase());
+
+    const results: ResultFile[] = [];
+
+    const entries = await fsPromises.readdir(projectPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.endsWith('_results')) continue;
+
+      const resultsDir = path.join(projectPath, entry.name);
+      await this.scanDirRecursive(resultsDir, projectPath, isResultFile, results);
+    }
+
+    return results;
+  }
+
+  private async scanDirRecursive(
+    dir: string,
+    projectRoot: string,
+    filter: (name: string) => boolean,
+    results: ResultFile[],
+  ): Promise<void> {
+    const entries = await fsPromises.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await this.scanDirRecursive(fullPath, projectRoot, filter, results);
+      } else if (entry.isFile() && filter(entry.name)) {
+        const stat = await fsPromises.stat(fullPath);
+        results.push({
+          name: entry.name,
+          path: path.relative(projectRoot, fullPath).replace(/\\/g, '/'),
+          type: this.getResultFileType(entry.name),
+          size: stat.size,
+        });
+      }
+    }
+  }
+
+  getResultFilePath(projectName: string, filePath: string): string {
+    const safeName = this.sanitizeProjectName(projectName);
+    const safeFilePath = this.sanitizeFilename(filePath);
+    const fullPath = path.join(this.projectsRoot, safeName, safeFilePath);
+
+    // Prevent directory traversal
+    const projectRoot = path.join(this.projectsRoot, safeName);
+    if (!fullPath.startsWith(projectRoot)) {
+      throw new Error('Invalid file path');
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`File not found: ${safeFilePath}`);
+    }
+
+    return fullPath;
+  }
+
+  getProjectPath(projectName: string): string {
+    const safeName = this.sanitizeProjectName(projectName);
+    const projectPath = path.join(this.projectsRoot, safeName);
+    if (!fs.existsSync(projectPath)) {
+      throw new Error(`Project "${safeName}" not found`);
+    }
+    return projectPath;
   }
 }
