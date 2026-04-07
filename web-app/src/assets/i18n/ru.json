@@ -386,7 +386,8 @@
     "simulationProgress": "Прогресс моделирования",
     "run": "Запуск",
     "stop": "Стоп",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "logCounter": "Показано последних {{ shown }} из {{ total }} строк"
   },
   "results": {
     "outputFiles": "Выходные файлы",

@@ -13,7 +13,9 @@ import { APP_CONFIG } from '../../../environments/environment';
 export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewChecked {
   @Input() projectName = '';
 
+  private readonly MAX_LOG_LINES = 500;
   logLines: string[] = [];
+  totalLinesReceived = 0;
   status: 'idle' | 'running' | 'done' | 'error' = 'idle';
   progress: number | null = null;
   apiUrl = APP_CONFIG.apiUrl;
@@ -32,8 +34,12 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
           this.status = 'running';
           this.progress = 0;
         }
+        this.totalLinesReceived++;
         if (!this.shouldFilterLine(data.line)) {
           this.logLines.push(data.line);
+          if (this.logLines.length > this.MAX_LOG_LINES) {
+            this.logLines = this.logLines.slice(-this.MAX_LOG_LINES);
+          }
           this.shouldScroll = true;
         }
         this.parseProgress(data.line);
@@ -103,6 +109,7 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
 
   clearLog(): void {
     this.logLines = [];
+    this.totalLinesReceived = 0;
   }
 
   stopSimulation(): void {
