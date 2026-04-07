@@ -87,6 +87,26 @@ describe('SimulationStatusComponent', () => {
       mockWs.emitDone(false, 1);
       expect(component.status).toBe('error');
     });
+
+    it('should transition to error when success is true but exitCode is non-zero', () => {
+      mockWs.emitLog('Starting...');
+      mockWs.emitDone(true, 1);
+      expect(component.status).toBe('error');
+    });
+
+    it('should not revert to running when log arrives after done', () => {
+      mockWs.emitLog('Starting...');
+      mockWs.emitDone(true);
+      mockWs.emitLog('Late log line');
+      expect(component.status).toBe('done');
+    });
+
+    it('should not revert to running when log arrives after error', () => {
+      mockWs.emitLog('Starting...');
+      mockWs.emitDone(false, 1);
+      mockWs.emitLog('Late log line');
+      expect(component.status).toBe('error');
+    });
   });
 
   describe('log lines', () => {

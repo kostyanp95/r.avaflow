@@ -29,7 +29,7 @@
       <span class="terminal-title">{{ 'modeling.output' | translate }}</span>
     </div>
     <div class="log-container" #logContainer>
-      <pre class="log-output" *ngIf="logLines.length > 0"><ng-container *ngFor="let line of logLines">{{ line }}
+      <pre class="log-output" *ngIf="logLines.length > 0"><ng-container *ngFor="let line of logLines"><span [class.log-error]="isErrorLine(line)" [class.log-warning]="isWarningLine(line)">{{ line }}</span>
 </ng-container></pre>
       <div class="log-empty" *ngIf="logLines.length === 0">
         {{ 'modeling.waitingForOutput' | translate }}
