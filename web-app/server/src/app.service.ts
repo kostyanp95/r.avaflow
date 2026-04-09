@@ -241,7 +241,8 @@ export class AppService {
    */
   private translateFrictionToV3(f: number[]): number[] {
     if (!f || f.length < 9) return f;
-    return [f[0], f[3], f[1], f[4], f[2], f[5], f[8]];
+    const flufri = f[6] || f[7] || f[8] || 0;
+    return [f[0], f[3], f[1], f[4], f[2], f[5], flufri];
   }
 
   /**
