@@ -2,6 +2,7 @@ import { AfterViewChecked, Component, ElementRef, Input, OnDestroy, OnInit, View
 import { HttpClient } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzMarks } from 'ng-zorro-antd/slider';
 import { WebSocketService } from '../../web-socket.service';
 import { APP_CONFIG } from '../../../environments/environment';
 
@@ -19,6 +20,17 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
   status: 'idle' | 'running' | 'done' | 'error' = 'idle';
   progress: number | null = null;
   apiUrl = APP_CONFIG.apiUrl;
+
+  // v3 progress: tend parsed from log
+  private tend = 0;
+
+  // CPU cores slider
+  cpuCores = 8;
+  cpuMarks: NzMarks = { 1: '1', 4: '4', 8: '8', 12: '12', 16: '16', 20: '20' };
+
+  // CPU/RAM gauge
+  cpuUsagePercent = 0;
+  memoryMB = 0;
 
   @ViewChild('logContainer') private logContainer?: ElementRef<HTMLDivElement>;
   private shouldScroll = false;
@@ -50,7 +62,14 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
       .subscribe(data => {
         this.status = (data.success && data.exitCode === 0) ? 'done' : 'error';
         this.progress = null;
+        this.cpuUsagePercent = 0;
+        this.memoryMB = 0;
       });
+
+    this.ws.socket$.on('simulationStats', (data: { cpuPercent: number; memoryMB: number }) => {
+      this.cpuUsagePercent = Math.min(100, Math.round(data.cpuPercent / 20));
+      this.memoryMB = data.memoryMB;
+    });
   }
 
   ngAfterViewChecked(): void {
@@ -118,6 +137,16 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
       .subscribe();
   }
 
+  updateCpuCores(value: number | number[]): void {
+    if (Array.isArray(value)) return;
+    this.http.put(`${APP_CONFIG.apiUrl}/run/cpus`, { cpus: value })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.message.success(`CPU cores: ${value}`),
+        error: () => this.message.error('Failed to update CPU cores')
+      });
+  }
+
   private static readonly ERROR_PATTERN = /^(Traceback |Error:|FileNotFoundError:|  File ")|FATAL:|CRITICAL:|Exception/;
   private static readonly WARNING_PATTERN = /Warning:|WARNING:/;
   private static readonly PERCENT_ONLY_PATTERN = /^\s*\d{1,3}\s*%\s*$/;
@@ -138,13 +167,33 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
   }
 
   private parseProgress(line: string): void {
-    // r.avaflow outputs: "Computational time step 6916: time = 182.0 s of 2400.0 s"
+    // 40G format: "Computational time step 6916: time = 182.0 s of 2400.0 s"
     const timeMatch = line.match(/time\s*=\s*([\d.]+)\s*s\s+of\s+([\d.]+)\s*s/);
     if (timeMatch) {
       const current = parseFloat(timeMatch[1]);
       const total = parseFloat(timeMatch[2]);
       if (total > 0) {
         this.progress = Math.min(Math.round((current / total) * 100), 100);
+      }
+      return;
+    }
+
+    // Parse tend from script args like "time=60,1000"
+    if (!this.tend) {
+      const tendMatch = line.match(/time=[\d.]+,([\d.]+)/);
+      if (tendMatch) {
+        this.tend = parseFloat(tendMatch[1]);
+      }
+    }
+
+    // v3 format: "<p-iter> <timestep> <cfl> <tlength> <sim_time> ..."
+    if (this.tend > 0) {
+      const v3Match = line.match(/^\s*\d+\s+\d+\s+[\d.]+\s+[\d.]+\s+([\d.]+)/);
+      if (v3Match) {
+        const simTime = parseFloat(v3Match[1]);
+        if (simTime > 0) {
+          this.progress = Math.min(99, Math.round((simTime / this.tend) * 100));
+        }
       }
     }
   }

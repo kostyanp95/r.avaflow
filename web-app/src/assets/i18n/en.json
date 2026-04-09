@@ -385,7 +385,10 @@
     "run": "Run",
     "stop": "Stop",
     "clear": "Clear",
-    "logCounter": "Showing last {{ shown }} of {{ total }} lines"
+    "logCounter": "Showing last {{ shown }} of {{ total }} lines",
+    "cpuCores": "CPU cores",
+    "cpuUsage": "CPU usage",
+    "memory": "Memory"
   },
   "results": {
     "outputFiles": "Output files",
