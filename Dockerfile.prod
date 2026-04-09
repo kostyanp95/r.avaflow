@@ -62,7 +62,7 @@ RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B827C12
 # GRASS GIS
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      grass-core grass-dev git make gcc g++ && \
+      grass-core grass-dev git make gcc g++ libgomp1 && \
     rm -rf /var/lib/apt/lists/*
 
 # R statistical software
@@ -108,6 +108,7 @@ RUN mkdir -p /data/projects/uploads
 ENV NODE_ENV=production
 ENV AVAFLOW_PROJECTS_PATH=/data/projects
 ENV AVAFLOW_MODULE=r.avaflow
+ENV OMP_NUM_THREADS=8
 ENV PORT=3000
 
 EXPOSE 3000

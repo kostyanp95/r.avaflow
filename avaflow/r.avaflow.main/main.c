@@ -39,7 +39,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <limits.h> 
+#include <limits.h>
+#include <omp.h>
 
 
 #ifdef WITHGRASS
@@ -5334,25 +5335,33 @@ int main ( int argc, char *argv[] ) { // calling main function
         for ( p=0; p<2; p++ ) {
         
             cslide = 0; cflow = 0;
-            for ( i=0; i<sico.IMAX; i++ ) {
-                for ( k=0; k<sico.NVECTMIN; k++ ) {
 
-                    awt[i][k] = 0; // resetting temporary state variables
-                    wintd[i][k] = 0;
-                    wintdtest[i][k] = 0;
+            #pragma omp parallel for schedule(static)
+            for ( i=0; i<sico.IMAX; i++ ) {
+                int kk;
+                for ( kk=0; kk<sico.NVECTMIN; kk++ ) {
+
+                    awt[i][kk] = 0; // resetting temporary state variables
+                    wintd[i][kk] = 0;
+                    wintdtest[i][kk] = 0;
                 }
-              
-                pxslide[i] = 0; anctr = 0;
+
+                pxslide[i] = 0;
+            }
+
+            for ( i=0; i<sico.IMAX; i++ ) {
+
+                anctr = 0;
 
                 if ( ptslide[i] > tsum || ptslide[i] == -777 ) cslide = 1; // resetting controls for relevance of sliding and flowing
                 if ( ptslide[i] <= tsum || ptslide[i] == -777 ) cflow = 1;
 
                 if ( ptslide[i] == -777 && sico.MODEL == 7 && cdomain[i] != 0 ) {
-                
+
                     anctr = 1;
                     for ( j=0; j<9; j++ ) { if ( aw[in[i][j]][6] > sico.HFLOWMIN ) anctr = 0; }
                 }
-                
+
                 if ( ptslide[i] > tsum || anctr == 1 ) pxslide[i] = 1;
             }
 
@@ -6466,6 +6475,21 @@ int main ( int argc, char *argv[] ) { // calling main function
 
                 if ( cflow == 1 ) {
 
+                  #pragma omp parallel firstprivate(sflow, sico) \
+                      private(i, k, l, vflowx, vflowy, vflowx2, vflowy2, vflowx3, vflowy3, \
+                              whflow, whflow2, whflow3, whx, why, whx1, why1, whx2, why2, \
+                              walphax, walphay, walphax2, walphay2, walphax3, walphay3, \
+                              hekin, frik, frit)
+                  {
+                  float grav[15], wh[9], wh1[9], wh2[9];
+                  float wu[9], wv[9], wu2[9], wv2[9], wu3[9], wv3[9];
+                  float walpha[9], walpha2[9], walpha3[9];
+                  float nbetax[9], nbetay[9], welev[9];
+                  float gkx[3], gky[3], wdu[3], wdv[3], xwdu[3], xwdv[3], wwd[18];
+                  int *cin;
+                  float *kappau, *vm, *cdrag, *gze, *disp, *gf, *gg, *gs, *gdecel;
+
+                  #pragma omp for schedule(dynamic, 64)
                   for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -6756,10 +6780,12 @@ int main ( int argc, char *argv[] ) { // calling main function
                         }
                     }
                 }
+                  } // end omp parallel (Region 2)
 
 
                 // Slopes of the fluxes
 
+                #pragma omp parallel for schedule(static) private(i, k)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -6767,7 +6793,7 @@ int main ( int argc, char *argv[] ) { // calling main function
                     if ( cdomain[i] <= 3 ) {
 
                         for ( k=0; k<sico.NVECTMIN; k++) { asigma_f[i][k]=0; asigma_g[i][k]=0; }
-		
+
                     } else {
 
                         for ( k=0; k<sico.NVECTMIN; k++ ) {
@@ -6781,18 +6807,21 @@ int main ( int argc, char *argv[] ) { // calling main function
 
                 // Values of vector at quarter of cell after half time step
 
+                #pragma omp parallel for schedule(static) private(i, j)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
 
-                    for ( j=0; j<4; j++ ) { 
-                    
+                    for ( j=0; j<4; j++ ) {
+
                         if ( cdomain[i] > 3 ) wintelev[i][j]=pelev[in[i][j]]+fj[j][0]*0.25*dx[i]*asigma_xelev[in[i][j]]+fj[j][1]*0.25*dy[i]*asigma_yelev[in[i][j]];
                         else wintelev[i][j] = pelev[i];
                     }
                 }
 
                 ctrl_noosc = 0;
+                #pragma omp parallel for schedule(static) \
+                    private(i, j, k, wintbtest, wintctest, dw_dt, dw_dttest)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -6853,6 +6882,25 @@ int main ( int argc, char *argv[] ) { // calling main function
 
                 // Fluxes and source terms (shifted coordinate system)
 
+                #pragma omp parallel firstprivate(sflow, sico) \
+                    private(i, j, k, l, ll, vflowx, vflowy, vflowx2, vflowy2, vflowx3, vflowy3, \
+                            whflow, whflow2, whflow3, wbetax, wbetay, wbetaxh, wbetayh, wbetaxy, \
+                            wbetax2, wbetay2, wbetaxh2, wbetayh2, \
+                            wbetax3, wbetay3, wbetaxh3, wbetayh3, \
+                            wdx, wdy, whx, why, whx1, why1, whx2, why2, \
+                            walphax, walphay, walphax2, walphay2, walphax3, walphay3, \
+                            hekin, frik, frit)
+                {
+                float grav[15], wgrav[15], wh[9], wh1[9], wh2[9];
+                float wu[9], wv[9], wu2[9], wv2[9], wu3[9], wv3[9];
+                float walpha[9], walpha2[9], walpha3[9];
+                float nbetax[9], nbetay[9], welev[9];
+                float gkx[3], gky[3], wdu[3], wdv[3], xwdu[3], xwdv[3], wwd[18];
+                float lf[4][9], lg[4][9], ls[4][9];
+                int *cin;
+                float *kappau, *vm, *cdrag, *gze, *disp, *gf, *gg, *gs, *gdecel;
+
+                #pragma omp for schedule(dynamic, 64)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -7163,7 +7211,7 @@ int main ( int argc, char *argv[] ) { // calling main function
                             gg = fg( wh, whflow, whflow2, whflow3, vflowx, vflowx2, vflowx3, vflowy, vflowy2, vflowy3,
                                 gky, gze, kappau, vm, why, walphay, cdrag, wgrav, disp, wbetay, sflow, sico );
 
-                            for ( k=0; k<sico.NVECTMIN; k++ ) { f[j][k] = gf[k]; g[j][k] = gg[k]; }
+                            for ( k=0; k<sico.NVECTMIN; k++ ) { lf[j][k] = gf[k]; lg[j][k] = gg[k]; }
                             free( kappau ); free( vm ); free( cdrag ); free( gze ); free( disp ); free( gf ); free( gg );
 
 
@@ -7311,7 +7359,7 @@ int main ( int argc, char *argv[] ) { // calling main function
                                 if ( vflowy3 == 0 ) wv3[0] = fdiv( 0.5 * gs[8], whflow3, sico.HFLOWMIN );
                             }
 
-                            for ( k=0; k<sico.NVECTMIN; k++ ) s[j][k] = gs[k];
+                            for ( k=0; k<sico.NVECTMIN; k++ ) ls[j][k] = gs[k];
                             free( gs );
 
 
@@ -7338,38 +7386,45 @@ int main ( int argc, char *argv[] ) { // calling main function
 
                             if ( sico.SLOMO > 1 && ( k == 1 || k == 2 || k == 4 || k == 5 || k == 7 || k == 8 ))
 
-                                wintd[i][k]=0.25*(s[0][k]+s[1][k]+s[2][k]+s[3][k]);
-                                
+                                wintd[i][k]=0.25*(ls[0][k]+ls[1][k]+ls[2][k]+ls[3][k]);
+
                             else wintd[i][k]=0.25*(winta[i][0][k]+winta[i][1][k]+winta[i][2][k]+winta[i][3][k])
-                                -tlength/dx[i]*(0.5*(f[2][k]+f[3][k])-0.5*(f[0][k]+f[1][k]))
-                                -tlength/dy[i]*(0.5*(g[1][k]+g[3][k])-0.5*(g[0][k]+g[2][k]))
-                                +0.25*tlength*(s[0][k]+s[1][k]+s[2][k]+s[3][k]);
+                                -tlength/dx[i]*(0.5*(lf[2][k]+lf[3][k])-0.5*(lf[0][k]+lf[1][k]))
+                                -tlength/dy[i]*(0.5*(lg[1][k]+lg[3][k])-0.5*(lg[0][k]+lg[2][k]))
+                                +0.25*tlength*(ls[0][k]+ls[1][k]+ls[2][k]+ls[3][k]);
 
                             if ( sico.SLOMO > 1 && ( k == 1 || k == 2 || k == 4 || k == 5 || k == 7 || k == 8 ))
 
-                                wintdtest[i][k]=0.25*(s[0][k]+s[1][k]+s[2][k]+s[3][k]);
-                                
+                                wintdtest[i][k]=0.25*(ls[0][k]+ls[1][k]+ls[2][k]+ls[3][k]);
+
                             else wintdtest[i][k]=0.25*(winta[i][0][k]+winta[i][1][k]+winta[i][2][k]+winta[i][3][k])
-                                -tlength/dx[i]*(0.5*(f[2][k]+f[3][k])-0.5*(f[0][k]+f[1][k]))
-                                -tlength/dy[i]*(0.5*(g[1][k]+g[3][k])-0.5*(g[0][k]+g[2][k]))
-                                +0.25*tlength*(s[0][k]+s[1][k]+s[2][k]+s[3][k]-d[i][0][k]-d[i][1][k]-d[i][2][k]-d[i][3][k]);
+                                -tlength/dx[i]*(0.5*(lf[2][k]+lf[3][k])-0.5*(lf[0][k]+lf[1][k]))
+                                -tlength/dy[i]*(0.5*(lg[1][k]+lg[3][k])-0.5*(lg[0][k]+lg[2][k]))
+                                +0.25*tlength*(ls[0][k]+ls[1][k]+ls[2][k]+ls[3][k]-d[i][0][k]-d[i][1][k]-d[i][2][k]-d[i][3][k]);
                         }
-                        
+
                     } else {
 
                         wintelevd[i] = pelev[i];
 
-                        for ( k=0; k<sico.NVECTMIN; k++ ) { 
-                    
+                        for ( k=0; k<sico.NVECTMIN; k++ ) {
+
                             wintd[i][k] = aw[i][k];
                             wintdtest[i][k] = aw[i][k];
                         }
                     }
                 }
+                } // end omp parallel (Region 5)
 
 
                 // Moving vector if second sub-timestep and writing values to temporary vector
 
+                #pragma omp parallel private(i, k, ctrlr, ctrlv, hflow, hflown, cvhmax)
+                {
+                int *cin;
+                float awttest[9];
+
+                #pragma omp for schedule(static)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -7457,7 +7512,8 @@ int main ( int argc, char *argv[] ) { // calling main function
                     free ( cin );
                   }
                 }
-                
+                } // end omp parallel (Region 6)
+
 
 // -- STOP --- Flow propagation with NOC scheme -----------------------------------------------------------------
 
@@ -7737,6 +7793,14 @@ int main ( int argc, char *argv[] ) { // calling main function
 
                 vcelr = 0;
 
+                #pragma omp parallel reduction(max: vcelr) \
+                    private(i, l, vflowx, vflowy, vflowx2, vflowy2, vflowx3, vflowy3, \
+                            whflow, whflow2, whflow3, hekin, vcelr0)
+                {
+                float wu[9], wv[9], wu2[9], wv2[9], wu3[9], wv3[9];
+                float gkx[3], gky[3], wdu[3], wdv[3];
+
+                #pragma omp for schedule(static)
                 for ( ix=0; ix<ib[0]; ix++ ) {
 
                     i = ibasket[0][ix];
@@ -7793,6 +7857,7 @@ int main ( int argc, char *argv[] ) { // calling main function
                         if ( vcelr0 > vcelr ) vcelr = vcelr0;
                     }
                 }
+                } // end omp parallel (CFL reduction)
 
                 cfl = vcelr * tlength / sico.CSZ; // updating CFL value
 
