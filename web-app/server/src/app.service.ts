@@ -36,13 +36,16 @@ export interface ResultFile {
   size: number;
 }
 
-// All raster parameter names recognized by r.avaflow
+// All raster parameter names recognized by r.avaflow (v3 + 40G)
 const RASTER_PARAMS = [
-  'elevation', 'hrelease1', 'hrelease2', 'hrelease3',
-  'hentrmax1', 'hentrmax2', 'hentrmax3',
+  'elevation',
+  'hrelease', 'hrelease1', 'hrelease2', 'hrelease3',
+  'hentrmax', 'hentrmax1', 'hentrmax2', 'hentrmax3',
   'impactarea', 'hdeposit', 'zones', 'trelease', 'trelstop',
+  'vinx', 'viny',
   'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
   'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
+  'tufri', 'flufri', 'cvshear', 'deltab',
   'addfri1', 'addfri2', 'addfri3',
   'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
   'cdeform', 'zfrag', 'ambdrag', 'tslide',
@@ -51,7 +54,7 @@ const RASTER_PARAMS = [
   'pbgr', 'pbgg', 'pbgb',
 ];
 
-// Default values for array parameters
+// Web-app internal array defaults (used for migration and diffing)
 const ARRAY_DEFAULTS: Record<string, number[]> = {
   friction:       [40, 20, 0, 20, 10, 0, 0, 0, 0.05],
   cohesion:       [0, 0, 0],
@@ -178,9 +181,9 @@ export class AppService {
     if (params.tint != null && params.tend != null && !params.time) {
       params.time = [params.tint, params.tend];
     }
-    // Convert old phases string to number
-    if (params.phases === 's,fs,f') params.phases = 3;
-    if (params.phases === 's') params.phases = 1;
+    // Convert numeric phases to v3 string format
+    if (params.phases === 3) params.phases = 's,fs,f';
+    if (params.phases === 1) params.phases = 's';
 
     return params;
   }
@@ -228,6 +231,105 @@ export class AppService {
     return cmds;
   }
 
+  // --- v3 translation helpers ---
+
+  /**
+   * Translate web-app friction[9] to v3 friction[7] for model=7.
+   * Web-app: [phi1, phi2, phi3, delta1, delta2, delta3, fl1, fl2, fl3]
+   * v3:      [phi1, delta1, phi2, delta2, phi3, delta3, flufri]
+   */
+  private translateFrictionToV3(f: number[]): number[] {
+    if (!f || f.length < 9) return f;
+    return [f[0], f[3], f[1], f[4], f[2], f[5], f[8]];
+  }
+
+  /**
+   * Translate web-app viscosity[3] to v3 viscosity[6] for model=7.
+   * Web-app: [v_solid, v_finesolid, v_fluid]
+   * v3:      [ny_ss, ny_sf, ny_fs, ny_ff, ny_ffs, ny_fff]
+   */
+  private translateViscosityToV3(v: number[]): number[] {
+    if (!v || v.length < 3) return v;
+    // If all zeros, use v3 defaults
+    if (v[0] === 0 && v[1] === 0 && v[2] === 0) {
+      return [-9999, -9999, -3.0, -9999, -3.0, 0.0];
+    }
+    return [v[0], v[0], v[1], v[1], v[2], 0.0];
+  }
+
+  /**
+   * Build v3 controls[11] from web-app scalar control params.
+   * v3 order: corrheight, diffcontrol, curvature, surface, entrainment,
+   *           stopping, dynfric, nonhydro, separation, hydmanage, deceleration
+   */
+  private buildV3Controls(p: any): number[] {
+    return [
+      0,                              // [0] corrheight
+      0,                              // [1] diffcontrol
+      1,                              // [2] curvature (always 1)
+      p.csurface || 0,                // [3] surface
+      p.centrainment ? 1 : 0,         // [4] entrainment
+      p.cstopping || 0,               // [5] stopping
+      0,                              // [6] dynfric (disabled by default)
+      0,                              // [7] nonhydro
+      0,                              // [8] separation
+      2,                              // [9] hydmanage (default 2)
+      0,                              // [10] deceleration
+    ];
+  }
+
+  /**
+   * Build v3 special[33] for model=7 from web-app drag/virtualmass params.
+   */
+  private buildV3Special(p: any): number[] {
+    const vm = p.virtualmass || [10, 0.12, 1];
+    const dr = p.drag || [1, 3, 1, 0.1, 1, 1];
+    return [
+      0.05,       // [0]  HFLOWMIN
+      0.0,        // [1]  reserved
+      0.333,      // [2]  solid fraction
+      0.0,        // [3]  reserved
+      vm[0],      // [4]  virtual mass number
+      vm[1],      // [5]  virtual mass coeff
+      vm[2],      // [6]  virtual mass exponent
+      dr[0],      // [7]  drag K
+      dr[2],      // [8]  drag n
+      dr[1],      // [9]  drag m
+      dr[0],      // [10] drag K repeat
+      dr[3],      // [11] drag Ut
+      dr[4],      // [12] drag Rep
+      dr[5],      // [13] drag j
+      1, 1, 1,    // [14-16] scaling factors
+      0, 0, 0,    // [17-19] reserved
+      1, 1, 1,    // [20-22] scaling factors
+      10, 0, 1, 1, 1,  // [23-27] additional params
+      0.0,        // [28] threshold
+      1.0,        // [29] slidepar-related
+      4.0,        // [30] slidepar-related
+      1.0,        // [31] slidepar-related
+      100.0,      // [32] slidepar-related
+    ];
+  }
+
+  /**
+   * Translate web-app thresholds[5] to v3 thresholds[4].
+   * Web-app: [hflow, kinetic, pressure, velocity, computation]
+   * v3:      [hflow, kinetic, pressure, computation]
+   */
+  private translateThresholdsToV3(t: number[]): number[] {
+    if (!t || t.length < 5) return t;
+    return [t[0], t[1], t[2], t[4]];
+  }
+
+  /**
+   * Translate web-app visualization[18] to v3 visualization[17].
+   * Web-app prepends viz_deform at index 0; v3 does not have it.
+   */
+  private translateVisualizationToV3(viz: number[]): number[] {
+    if (!viz || viz.length < 18) return viz;
+    return viz.slice(1);
+  }
+
   createExperiment(experiment: Experiment): string {
     const p = this.migrateParams({ ...experiment.parameters });
 
@@ -250,12 +352,9 @@ export class AppService {
     if (p.flag_t) flags += ' -t';
     if (p.flag_m) flags += ' -m';
 
-    // 2. Phases mapping
-    // r.avaflow.40G uses numeric phases (1, 3); classic r.avaflow uses string (s, s,fs,f)
+    // 2. Phases: v3 uses string format (s, s,fs,f)
     let phasesStr: string;
-    if (this.avaflowModule === 'r.avaflow.40G') {
-      phasesStr = String(p.phases ?? 3);
-    } else if (typeof p.phases === 'string') {
+    if (typeof p.phases === 'string') {
       phasesStr = p.phases;
     } else {
       phasesStr = p.phases === 1 ? 's' : 's,fs,f';
@@ -283,18 +382,31 @@ export class AppService {
       }
     }
 
-    // 5. Scalar controls (only if different from default)
-    const scalarParams = [
-      'ctopo', 'limiter', 'gravity', 'cores',
-      'clayers', 'cdispersion', 'csurface',
-      'centrainment', 'cstopping', 'cmelt',
-    ];
-    for (const paramName of scalarParams) {
-      if (p[paramName] != null) {
-        const val = this.validateNumber(p[paramName], paramName);
-        if (val !== SCALAR_DEFAULTS[paramName]) {
-          parts.push(`  ${paramName}=${val}`);
-        }
+    // 5. Scalar params: gravity, limiter, layers
+    if (p.gravity != null) {
+      const val = this.validateNumber(p.gravity, 'gravity');
+      if (val !== SCALAR_DEFAULTS.gravity) {
+        parts.push(`  gravity=${val}`);
+      }
+    }
+    if (p.limiter != null) {
+      const val = this.validateNumber(p.limiter, 'limiter');
+      if (val !== SCALAR_DEFAULTS.limiter) {
+        parts.push(`  limiter=${val}`);
+      }
+    }
+    if (p.clayers != null) {
+      const val = this.validateNumber(p.clayers, 'clayers');
+      if (val !== SCALAR_DEFAULTS.clayers) {
+        parts.push(`  layers=${val}`);
+      }
+    }
+
+    // cores: only for multiple model runs
+    if (p.flag_m && p.cores != null) {
+      const val = this.validateNumber(p.cores, 'cores');
+      if (val !== SCALAR_DEFAULTS.cores) {
+        parts.push(`  cores=${val}`);
       }
     }
 
@@ -306,70 +418,75 @@ export class AppService {
       }
     }
 
-    // 6. Array material parameters
-    // Helper: check if array differs from its default
-    const arraysEqual = (a: number[], b: number[]): boolean => {
-      if (a.length !== b.length) return false;
-      return a.every((v, i) => v === b[i]);
-    };
-
+    // Helper functions
     const emitArray = (name: string, values: number[] | null | undefined) => {
       if (!values || !Array.isArray(values)) return;
       values.forEach((v, i) => this.validateNumber(v, `${name}[${i}]`));
       parts.push(`  ${name}=${values.join(',')}`);
     };
 
-    const emitArrayIfChanged = (
-      name: string,
-      values: number[] | null | undefined,
-    ) => {
-      if (!values || !Array.isArray(values)) return;
-      const defaults = ARRAY_DEFAULTS[name];
-      if (!defaults || !arraysEqual(values, defaults)) {
-        emitArray(name, values);
-      }
-    };
-
-    // density — ALWAYS emit
+    // 6. density — ALWAYS emit
     emitArray('density', p.density);
 
-    // Other array params — emit only when changed from defaults
-    emitArrayIfChanged('friction', p.friction);
-    emitArrayIfChanged('cohesion', p.cohesion);
-    emitArrayIfChanged('viscosity', p.viscosity);
-    emitArrayIfChanged('deformation', p.deformation);
-    emitArrayIfChanged('slidepar', p.slidepar);
-    emitArrayIfChanged('shearing', p.shearing);
-    emitArrayIfChanged('fragmentation', p.fragmentation);
-    emitArrayIfChanged('ambient', p.ambient);
-    emitArrayIfChanged('drag', p.drag);
-    emitArrayIfChanged('virtualmass', p.virtualmass);
+    // 7. friction: translate web-app [9] → v3 [7] for 3-phase model
+    if (p.friction && Array.isArray(p.friction)) {
+      const v3friction = this.translateFrictionToV3(p.friction);
+      emitArray('friction', v3friction);
+    }
 
-    // entrainment: emit if centrainment=1 OR values differ from default
+    // 8. viscosity: translate web-app [3] → v3 [6] for 3-phase model
+    if (p.viscosity && Array.isArray(p.viscosity)) {
+      const v3visc = this.translateViscosityToV3(p.viscosity);
+      emitArray('viscosity', v3visc);
+    }
+
+    // 9. basal: web-app stores as 'entrainment' array, v3 param name is 'basal'
     if (p.entrainment && Array.isArray(p.entrainment)) {
-      const defaults = ARRAY_DEFAULTS.entrainment;
-      if (p.centrainment === 1 || !arraysEqual(p.entrainment, defaults)) {
-        emitArray('entrainment', p.entrainment);
+      emitArray('basal', p.entrainment);
+    }
+
+    // 10. transformation
+    if (p.transformation && Array.isArray(p.transformation)) {
+      emitArray('transformation', p.transformation);
+    }
+
+    // 11. controls: build v3 controls[11] from web-app scalar params
+    const v3controls = this.buildV3Controls(p);
+    parts.push(`  controls=${v3controls.join(',')}`);
+
+    // 12. special: build v3 special[33] from web-app drag/virtualmass
+    const v3special = this.buildV3Special(p);
+    parts.push(`  special=${v3special.join(',')}`);
+
+    // 13. dynfric: v3 default for model=7
+    parts.push(`  dynfric=0.0,-6.0,0.0`);
+
+    // 14. slidepar: web-app [6] → v3 [3] (first 3 values)
+    if (p.slidepar && Array.isArray(p.slidepar)) {
+      const v3slidepar = p.slidepar.slice(0, 3);
+      emitArray('slidepar', v3slidepar);
+    }
+
+    // 15. thresholds: web-app [5] → v3 [4] (remove velocity threshold at index 3)
+    if (p.thresholds && Array.isArray(p.thresholds)) {
+      const v3thresholds = this.translateThresholdsToV3(p.thresholds);
+      emitArray('thresholds', v3thresholds);
+    }
+
+    // 16. cfl
+    if (p.cfl && Array.isArray(p.cfl)) {
+      emitArray('cfl', p.cfl);
+    }
+
+    // 17. slomo: web-app [3] → v3 scalar (first element)
+    if (p.slomo && Array.isArray(p.slomo)) {
+      const val = this.validateNumber(p.slomo[0], 'slomo');
+      if (val !== 1) {
+        parts.push(`  slomo=${val}`);
       }
     }
 
-    // thresholds, cfl, slomo
-    emitArrayIfChanged('thresholds', p.thresholds);
-    emitArrayIfChanged('cfl', p.cfl);
-    emitArrayIfChanged('slomo', p.slomo);
-
-    // 7. Phase transformation
-    emitArrayIfChanged('transformation', p.transformation);
-
-    // melting: emit if cmelt=1 OR values differ from default
-    if (p.melting && Array.isArray(p.melting)) {
-      const defaults = ARRAY_DEFAULTS.melting;
-      if (p.cmelt === 1 || !arraysEqual(p.melting, defaults)) {
-        emitArray('melting', p.melting);
-      }
-    }
-
-    // 8. Special parameters
+    // 18. Special parameters
     if (p.aoicoords && Array.isArray(p.aoicoords) && p.aoicoords.length === 4) {
       p.aoicoords.forEach((v: any, i: number) =>
         this.validateNumber(v, `aoicoords[${i}]`),
@@ -390,7 +507,7 @@ export class AppService {
       parts.push(`  vhentrmax=${p.vhentrmax.join(',')}`);
     }
 
-    // 9. Text parameters
+    // 19. Text parameters
     const textParams = [
       'hydrograph', 'hydrocoords', 'frictiograph',
       'transformograph', 'profile', 'ctrlpoints',
@@ -402,12 +519,13 @@ export class AppService {
       }
     }
 
-    // 10. Visualization — only emit if explicitly provided and flagged
+    // 20. Visualization: web-app [18] → v3 [17] (remove deform at index 0)
     if (p.visualizationExplicit && p.visualization && Array.isArray(p.visualization)) {
-      parts.push(`  visualization=${p.visualization.join(',')}`);
+      const v3viz = this.translateVisualizationToV3(p.visualization);
+      parts.push(`  visualization=${v3viz.join(',')}`);
     }
 
-    // 11. time — ALWAYS LAST
+    // 21. time — ALWAYS LAST
     const tint = this.validateNumber(p.time[0], 'time[0]');
     const tend = this.validateNumber(p.time[1], 'time[1]');
     parts.push(`  time=${tint},${tend}`);
