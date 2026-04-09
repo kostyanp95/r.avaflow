@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Body,
   Param,
   Res,
@@ -84,6 +85,16 @@ export class AppController {
   @Post('run/stop')
   stopSimulation() {
     return this.appService.stopSimulation();
+  }
+
+  @Put('run/cpus')
+  updateCpus(@Body() body: { cpus: number }) {
+    return this.appService.updateCpuLimit(body.cpus);
+  }
+
+  @Get('run/stats')
+  getStats() {
+    return this.appService.getSimulationStats();
   }
 
   @Get('project/:name/files')

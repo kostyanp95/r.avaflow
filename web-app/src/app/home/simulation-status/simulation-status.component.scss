@@ -146,6 +146,58 @@
   100% { transform: translateX(100%); }
 }
 
+// ── CPU control slider ──
+
+.cpu-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.cpu-label {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cpu-value {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+// ── CPU/RAM gauge ──
+
+.cpu-gauge {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.gauge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.gauge-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.gauge-value {
+  font-size: 12px;
+  font-weight: 600;
+}
+
 // ── Terminal / Log area ──
 
 .terminal-section {

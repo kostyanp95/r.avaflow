@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
-import { spawn, ChildProcess } from 'child_process';
+import * as http from 'http';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import { AppGateway } from './app.gateway';
 import { promisify } from 'util';
 
@@ -634,6 +635,11 @@ export class AppService {
 
     this.runningProcess = child;
 
+    const statsInterval = setInterval(() => {
+      const stats = this.getSimulationStats();
+      this.appGateway.server.emit('simulationStats', stats);
+    }, 5000);
+
     const emitLine = (line: string) => {
       this.appGateway.server.emit('simulationLog', {
         line,
@@ -652,6 +658,7 @@ export class AppService {
     });
 
     child.on('close', (exitCode: number) => {
+      clearInterval(statsInterval);
       this.runningProcess = null;
       this.appGateway.server.emit('simulationDone', {
         projectName: safeName,
@@ -661,6 +668,7 @@ export class AppService {
     });
 
     child.on('error', (err: Error) => {
+      clearInterval(statsInterval);
       this.runningProcess = null;
       emitLine(`Error spawning GRASS: ${err.message}`);
       this.appGateway.server.emit('simulationDone', {
@@ -681,6 +689,56 @@ export class AppService {
     this.runningProcess.kill();
     this.runningProcess = null;
     return { success: true, message: 'Simulation stop signal sent' };
+  }
+
+  async updateCpuLimit(cpus: number): Promise<{ success: boolean; cpus: number }> {
+    const containerName = process.env.HOSTNAME || 'self';
+    const nanoCpus = cpus * 1e9;
+    const data = JSON.stringify({ NanoCpus: nanoCpus });
+
+    return new Promise((resolve) => {
+      const options: http.RequestOptions = {
+        socketPath: '/var/run/docker.sock',
+        path: `/v1.47/containers/${containerName}/update`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': data.length,
+        },
+      };
+
+      const req = http.request(options, (res) => {
+        resolve({ success: res.statusCode === 200, cpus });
+      });
+      req.on('error', () => resolve({ success: false, cpus: 0 }));
+      req.write(data);
+      req.end();
+    });
+  }
+
+  getSimulationStats(): { cpuPercent: number; memoryMB: number; pid: number | null } {
+    if (!this.runningProcess) {
+      return { cpuPercent: 0, memoryMB: 0, pid: null };
+    }
+
+    try {
+      const result = execSync(
+        `ps aux | grep r.avaflow.main | grep -v grep | head -1`,
+        { timeout: 3000 },
+      );
+      const line = result.toString().trim();
+      if (!line) {
+        return { cpuPercent: 0, memoryMB: 0, pid: this.runningProcess.pid };
+      }
+      const parts = line.split(/\s+/);
+      return {
+        cpuPercent: parseFloat(parts[2]) || 0,
+        memoryMB: Math.round((parseInt(parts[5]) || 0) / 1024),
+        pid: parseInt(parts[1]) || this.runningProcess.pid,
+      };
+    } catch {
+      return { cpuPercent: 0, memoryMB: 0, pid: this.runningProcess?.pid || null };
+    }
   }
 
   async listProjectFiles(projectName: string): Promise<string[]> {

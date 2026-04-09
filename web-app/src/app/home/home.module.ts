@@ -9,7 +9,7 @@ import {NzTabsModule} from 'ng-zorro-antd/tabs';
 import {NzWaveModule} from 'ng-zorro-antd/core/wave';
 import {NzTypographyModule} from 'ng-zorro-antd/typography';
 import {NzCollapseModule} from 'ng-zorro-antd/collapse';
-import {ReactiveFormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {NzFormModule} from 'ng-zorro-antd/form';
 import {NzSwitchModule} from 'ng-zorro-antd/switch';
 import {NzRadioModule} from 'ng-zorro-antd/radio';
@@ -35,13 +35,14 @@ import {NzMessageModule} from 'ng-zorro-antd/message';
 import {NzTableModule} from 'ng-zorro-antd/table';
 import {NzPopconfirmModule} from 'ng-zorro-antd/popconfirm';
 import {NzProgressModule} from 'ng-zorro-antd/progress';
+import {NzSliderModule} from 'ng-zorro-antd/slider';
 import {NzModalModule} from 'ng-zorro-antd/modal';
 import {HttpClientModule} from '@angular/common/http';
 import {TranslateModule} from '@ngx-translate/core';
 
 @NgModule({
   declarations: [HomeComponent, ProjectFormComponent, SimulationWizardComponent, SimulationStatusComponent, SimulationResultsComponent],
-    imports: [CommonModule, BrowserAnimationsModule, SharedModule, HomeRoutingModule, HttpClientModule, TranslateModule, NzButtonModule, NzIconModule, NzLayoutModule, NzMenuModule, NzTabsModule, NzWaveModule, NzTypographyModule, NzCollapseModule, ReactiveFormsModule, NzFormModule, NzSwitchModule, NzRadioModule, NzSelectModule, NzToolTipModule, NzInputModule, NzAffixModule, NzUploadModule, NzStepsModule, NzInputNumberModule, NzDescriptionsModule, NzBadgeModule, NzTagModule, NzMessageModule, NzTableModule, NzPopconfirmModule, NzProgressModule, NzModalModule]
+    imports: [CommonModule, BrowserAnimationsModule, SharedModule, HomeRoutingModule, HttpClientModule, TranslateModule, NzButtonModule, NzIconModule, NzLayoutModule, NzMenuModule, NzTabsModule, NzWaveModule, NzTypographyModule, NzCollapseModule, ReactiveFormsModule, NzFormModule, NzSwitchModule, NzRadioModule, NzSelectModule, NzToolTipModule, NzInputModule, NzAffixModule, NzUploadModule, NzStepsModule, NzInputNumberModule, NzDescriptionsModule, NzBadgeModule, NzTagModule, NzMessageModule, NzTableModule, NzPopconfirmModule, NzProgressModule, NzSliderModule, NzModalModule, FormsModule]
 })
 export class HomeModule {
 }

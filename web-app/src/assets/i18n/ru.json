@@ -385,7 +385,10 @@
     "run": "Запуск",
     "stop": "Стоп",
     "clear": "Очистить",
-    "logCounter": "Показано последних {{ shown }} из {{ total }} строк"
+    "logCounter": "Показано последних {{ shown }} из {{ total }} строк",
+    "cpuCores": "Ядра CPU",
+    "cpuUsage": "Нагрузка CPU",
+    "memory": "Память"
   },
   "results": {
     "outputFiles": "Выходные файлы",

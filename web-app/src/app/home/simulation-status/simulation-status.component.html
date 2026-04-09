@@ -22,6 +22,39 @@
     </div>
   </div>
 
+  <!-- CPU cores slider -->
+  <div class="cpu-control" *ngIf="status === 'running'">
+    <span class="cpu-label">{{ 'modeling.cpuCores' | translate }}:</span>
+    <nz-slider
+      [(ngModel)]="cpuCores"
+      [nzMin]="1"
+      [nzMax]="20"
+      [nzStep]="1"
+      [nzMarks]="cpuMarks"
+      (nzOnAfterChange)="updateCpuCores($event)"
+      style="flex: 1;">
+    </nz-slider>
+    <span class="cpu-value">{{ cpuCores }}</span>
+  </div>
+
+  <!-- CPU/RAM gauge -->
+  <div class="cpu-gauge" *ngIf="status === 'running'">
+    <div class="gauge-item">
+      <span class="gauge-label">CPU</span>
+      <nz-progress
+        [nzPercent]="cpuUsagePercent"
+        nzType="circle"
+        [nzWidth]="60"
+        [nzStrokeColor]="cpuUsagePercent > 80 ? '#ff4d4f' : cpuUsagePercent > 50 ? '#faad14' : '#52c41a'">
+      </nz-progress>
+      <span class="gauge-value">{{ cpuUsagePercent }}%</span>
+    </div>
+    <div class="gauge-item">
+      <span class="gauge-label">RAM</span>
+      <span class="gauge-value">{{ memoryMB }} MB</span>
+    </div>
+  </div>
+
   <!-- Terminal log -->
   <div class="terminal-section">
     <div class="terminal-header">
