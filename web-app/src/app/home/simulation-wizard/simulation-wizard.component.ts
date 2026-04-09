@@ -61,7 +61,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       prefix: [D.prefix, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/), Validators.maxLength(20)]],
       cellsize: [D.cellsize, [Validators.required, Validators.min(1)]],
       phases: [D.phases],
-      ctopo: [D.ctopo === 1],
       limiter: [D.limiter],
       gravity: [D.gravity, [Validators.required, Validators.min(0.01)]],
       cores: [D.cores, [Validators.required, Validators.min(1)]],
@@ -70,12 +69,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       threshold2: [D.thresholds[1]],
       threshold3: [D.thresholds[2]],
       threshold4: [D.thresholds[3]],
-      threshold5: [D.thresholds[4]],
       cfl_number: [D.cfl[0], [Validators.min(0.01), Validators.max(0.5)]],
       cfl_timestep: [D.cfl[1]],
-      slomo_time: [D.slomo[0]],
-      slomo_viscosity: [D.slomo[1]],
-      slomo_flux: [D.slomo[2]],
+      slomo: [D.slomo],
       flag_m: [false],
       sampling: [100],
       aoi_north: [null],
@@ -121,31 +117,19 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       viscosity0: [0],
       viscosity1: [0],
       viscosity2: [0],
-      deformation0: [D.deformation[0], [Validators.min(0), Validators.max(1)]],
-      deformation1: [D.deformation[1], [Validators.min(0), Validators.max(1)]],
-      deformation2: [D.deformation[2], [Validators.min(0), Validators.max(1)]],
       clayers: [false],
-      cdispersion: [false],
-      csurface: [0],
       // Inter-phase interactions (collapsible, multi-phase only)
       drag0: [D.drag[0]], drag1: [D.drag[1]], drag2: [D.drag[2]],
       drag3: [D.drag[3]], drag4: [D.drag[4]], drag5: [D.drag[5]],
       vm0: [D.virtualmass[0]], vm1: [D.virtualmass[1]], vm2: [D.virtualmass[2]],
-      // Block sliding & advanced (collapsible)
+      // Block sliding (collapsible)
       slidepar0: [0], slidepar1: [0], slidepar2: [0],
       slidepar3: [0], slidepar4: [0], slidepar5: [0],
-      shearing: [0],
-      fragmentation0: [0], fragmentation1: [0],
-      ambient: [0],
       // Spatial parameter map overrides (collapsible)
       phi1: [null], phi2: [null], phi3: [null],
       delta1: [null], delta2: [null], delta3: [null],
-      addfri1: [null], addfri2: [null], addfri3: [null],
-      coh1: [null], coh2: [null], coh3: [null],
       ny1: [null], ny2: [null], ny3: [null],
-      cdeform: [null],
-      zfrag: [null],
-      ambdrag: [null],
+      tufri: [null], flufri: [null], cvshear: [null], deltab: [null],
       frictiograph: [null],
       tslide: [null],
     });
@@ -164,9 +148,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       cstopping: [0],
       tstop: [null],
       // Phase transformation (multi-phase only)
-      cmelt: [false],
       transformation0: [0], transformation1: [0], transformation2: [0],
-      melting0: [0], melting1: [0], melting2: [0], melting3: [0.2], melting4: [0.5],
       ctrans12: [null], ctrans13: [null], ctrans23: [null],
       transformograph: [null],
     });
@@ -189,7 +171,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     // Step 5: Visualization (all optional)
     this.visualizationForm = this.fb.group({
       pbgr: [null], pbgg: [null], pbgb: [null],
-      viz_deform: [0],
       viz_hflowmin: [0.1],
       viz_hflowref: [5.0],
       viz_htsunref: [5.0],
@@ -244,10 +225,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
 
   get isStoppingActive(): boolean {
     return this.entrainmentForm.value.cstopping !== 0;
-  }
-
-  get isMeltActive(): boolean {
-    return this.entrainmentForm.value.cmelt === true;
   }
 
   get isMultipleRuns(): boolean {
@@ -331,13 +308,12 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     const params: any = {
       cellsize: s.cellsize,
       phases: s.phases,
-      ctopo: s.ctopo ? 1 : 0,
       limiter: s.limiter,
       gravity: s.gravity,
       cores: s.cores,
-      thresholds: [s.threshold1, s.threshold2, s.threshold3, s.threshold4, s.threshold5],
+      thresholds: [s.threshold1, s.threshold2, s.threshold3, s.threshold4],
       cfl: [s.cfl_number, s.cfl_timestep],
-      slomo: [s.slomo_time, s.slomo_viscosity, s.slomo_flux],
+      slomo: s.slomo,
       time: [o.tint, o.tend],
       elevation: t.elevation,
       hrelease1: t.hrelease1 || null,
@@ -356,16 +332,10 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       friction: [m.friction0, m.friction1, m.friction2, m.friction3, m.friction4, m.friction5, m.friction6, m.friction7, m.friction8],
       cohesion: [m.cohesion0, m.cohesion1, m.cohesion2],
       viscosity: [m.viscosity0, m.viscosity1, m.viscosity2],
-      deformation: [m.deformation0, m.deformation1, m.deformation2],
       clayers: m.clayers ? 1 : 0,
-      cdispersion: m.cdispersion ? 1 : 0,
-      csurface: m.csurface,
       drag: mp ? [m.drag0, m.drag1, m.drag2, m.drag3, m.drag4, m.drag5] : null,
       virtualmass: mp ? [m.vm0, m.vm1, m.vm2] : null,
       slidepar: [m.slidepar0, m.slidepar1, m.slidepar2, m.slidepar3, m.slidepar4, m.slidepar5],
-      shearing: m.shearing,
-      fragmentation: [m.fragmentation0, m.fragmentation1],
-      ambient: m.ambient,
       centrainment: e.centrainment ? 1 : 0,
       cstopping: e.cstopping,
       entrainment: [e.entrainment_coeff, e.stopping_threshold],
@@ -376,9 +346,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       vhentrmax: e.vhentrmax || null,
       centr: e.centr || null,
       tstop: e.tstop || null,
-      cmelt: mp ? (e.cmelt ? 1 : 0) : 0,
       transformation: mp ? [e.transformation0, e.transformation1, e.transformation2] : null,
-      melting: (mp && e.cmelt) ? [e.melting0, e.melting1, e.melting2, e.melting3, e.melting4] : null,
       ctrans12: mp ? (e.ctrans12 || null) : null,
       ctrans13: mp ? (e.ctrans13 || null) : null,
       ctrans23: mp ? (e.ctrans23 || null) : null,
@@ -408,8 +376,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     // Spatial parameter map overrides
     const rasterOverrides = [
       'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
-      'addfri1', 'addfri2', 'addfri3', 'coh1', 'coh2', 'coh3',
-      'ny1', 'ny2', 'ny3', 'cdeform', 'zfrag', 'ambdrag', 'tslide'
+      'ny1', 'ny2', 'ny3', 'tufri', 'flufri', 'cvshear', 'deltab', 'tslide'
     ];
     for (const key of rasterOverrides) {
       params[key] = m[key] || null;
@@ -422,7 +389,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     if (v.pbgb) params.pbgb = v.pbgb;
 
     params.visualization = [
-      v.viz_deform, v.viz_hflowmin, v.viz_hflowref, v.viz_htsunref,
+      v.viz_hflowmin, v.viz_hflowref, v.viz_htsunref,
       v.viz_hcontmin, v.viz_hcontmax, v.viz_hcontint,
       v.viz_zcontmin, v.viz_zcontmax, v.viz_zcontint,
       v.viz_pred, v.viz_pgreen, v.viz_pblue, v.viz_pexp,
@@ -493,9 +460,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
       'centr', 'tstop',
       'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
-      'addfri1', 'addfri2', 'addfri3',
-      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
-      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ny1', 'ny2', 'ny3',
+      'tufri', 'flufri', 'cvshear', 'deltab', 'tslide',
       'ctrans12', 'ctrans13', 'ctrans23',
       'pbgr', 'pbgg', 'pbgb',
     ];
@@ -508,7 +474,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     const D = DEFAULTS;
 
     // Scalars: only emit if non-default
-    if (p.ctopo !== 0) parts.push(`  ctopo=${p.ctopo} \\`);
     if (p.limiter !== 1) parts.push(`  limiter=${p.limiter} \\`);
     if (p.gravity !== 9.81) parts.push(`  gravity=${p.gravity} \\`);
     if (p.cores !== 8) parts.push(`  cores=${p.cores} \\`);
@@ -518,19 +483,16 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     if (!this.arrEq(p.friction, D.friction)) parts.push(`  friction=${p.friction.join(',')} \\`);
     if (!this.arrEq(p.cohesion, [0, 0, 0])) parts.push(`  cohesion=${p.cohesion.join(',')} \\`);
     if (!this.arrEq(p.viscosity, [0, 0, 0])) parts.push(`  viscosity=${p.viscosity.join(',')} \\`);
-    if (p.deformation && !this.arrEq(p.deformation, [1, 1, 1])) parts.push(`  deformation=${p.deformation.join(',')} \\`);
 
     if (p.centrainment !== 0) parts.push(`  centrainment=${p.centrainment} \\`);
     if (p.cstopping !== 0) parts.push(`  cstopping=${p.cstopping} \\`);
     if (p.centrainment !== 0 || p.cstopping !== 0) {
       if (!this.arrEq(p.entrainment, [D.entrainment_coeff, D.stopping_threshold])) {
-        parts.push(`  entrainment=${p.entrainment.join(',')} \\`);
+        parts.push(`  basal=${p.entrainment.join(',')} \\`);
       }
     }
 
     if (p.clayers !== 0) parts.push(`  clayers=${p.clayers} \\`);
-    if (p.cdispersion !== 0) parts.push(`  cdispersion=${p.cdispersion} \\`);
-    if (p.csurface !== 0) parts.push(`  csurface=${p.csurface} \\`);
 
     if (p.drag && this.isMultiPhase && !this.arrEq(p.drag, D.drag)) {
       parts.push(`  drag=${p.drag.join(',')} \\`);
@@ -542,20 +504,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     if (p.slidepar && !this.arrEq(p.slidepar, [0, 0, 0, 0, 0, 0])) {
       parts.push(`  slidepar=${p.slidepar.join(',')} \\`);
     }
-    if (p.shearing !== 0) parts.push(`  shearing=${p.shearing} \\`);
-    if (p.fragmentation && !this.arrEq(p.fragmentation, [0, 0])) {
-      parts.push(`  fragmentation=${p.fragmentation.join(',')} \\`);
-    }
-    if (p.ambient !== 0) parts.push(`  ambient=${p.ambient} \\`);
 
-    if (p.cmelt !== 0 && this.isMultiPhase) {
-      parts.push(`  cmelt=${p.cmelt} \\`);
-      if (p.transformation && !this.arrEq(p.transformation, [0, 0, 0])) {
-        parts.push(`  transformation=${p.transformation.join(',')} \\`);
-      }
-      if (p.melting && !this.arrEq(p.melting, D.melting)) {
-        parts.push(`  melting=${p.melting.join(',')} \\`);
-      }
+    if (p.transformation && this.isMultiPhase && !this.arrEq(p.transformation, [0, 0, 0])) {
+      parts.push(`  transformation=${p.transformation.join(',')} \\`);
     }
 
     if (p.rhrelease1 != null) parts.push(`  rhrelease1=${p.rhrelease1} \\`);
@@ -575,8 +526,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     if (p.cfl && !this.arrEq(p.cfl, D.cfl)) {
       parts.push(`  cfl=${p.cfl.join(',')} \\`);
     }
-    if (p.slomo && !this.arrEq(p.slomo, [1, 1, 1])) {
-      parts.push(`  slomo=${p.slomo.join(',')} \\`);
+    if (p.slomo && p.slomo !== '1') {
+      parts.push(`  slomo=${p.slomo} \\`);
     }
     if (p.flag_m) parts.push(`  sampling=${p.sampling || 100} \\`);
     if (p.aoicoords) parts.push(`  aoicoords=${p.aoicoords.join(',')} \\`);
@@ -604,9 +555,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
       'centr', 'tstop',
       'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
-      'addfri1', 'addfri2', 'addfri3',
-      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
-      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ny1', 'ny2', 'ny3',
+      'tufri', 'flufri', 'cvshear', 'deltab', 'tslide',
       'ctrans12', 'ctrans13', 'ctrans23',
       'pbgr', 'pbgg', 'pbgb',
     ];
@@ -657,11 +607,11 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     this.availableRasters = [];
     this.setupForm.reset({
       name: '', prefix: D.prefix, cellsize: D.cellsize, phases: D.phases,
-      ctopo: D.ctopo === 1, limiter: D.limiter, gravity: D.gravity, cores: D.cores,
+      limiter: D.limiter, gravity: D.gravity, cores: D.cores,
       threshold1: D.thresholds[0], threshold2: D.thresholds[1], threshold3: D.thresholds[2],
-      threshold4: D.thresholds[3], threshold5: D.thresholds[4],
+      threshold4: D.thresholds[3],
       cfl_number: D.cfl[0], cfl_timestep: D.cfl[1],
-      slomo_time: D.slomo[0], slomo_viscosity: D.slomo[1], slomo_flux: D.slomo[2],
+      slomo: D.slomo,
       flag_m: false, sampling: 100,
       aoi_north: null, aoi_south: null, aoi_west: null, aoi_east: null,
     });
@@ -673,26 +623,23 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       friction6: D.friction[6], friction7: D.friction[7], friction8: D.friction[8],
       cohesion0: 0, cohesion1: 0, cohesion2: 0,
       viscosity0: 0, viscosity1: 0, viscosity2: 0,
-      deformation0: D.deformation[0], deformation1: D.deformation[1], deformation2: D.deformation[2],
-      clayers: false, cdispersion: false, csurface: 0,
+      clayers: false,
       drag0: D.drag[0], drag1: D.drag[1], drag2: D.drag[2],
       drag3: D.drag[3], drag4: D.drag[4], drag5: D.drag[5],
       vm0: D.virtualmass[0], vm1: D.virtualmass[1], vm2: D.virtualmass[2],
       slidepar0: 0, slidepar1: 0, slidepar2: 0, slidepar3: 0, slidepar4: 0, slidepar5: 0,
-      shearing: 0, fragmentation0: 0, fragmentation1: 0, ambient: 0,
     });
     this.entrainmentForm.reset({
       centrainment: false, entrainment_coeff: D.entrainment_coeff, stopping_threshold: D.stopping_threshold,
-      cstopping: 0, cmelt: false,
+      cstopping: 0,
       transformation0: 0, transformation1: 0, transformation2: 0,
-      melting0: 0, melting1: 0, melting2: 0, melting3: 0.2, melting4: 0.5,
     });
     this.outputForm.reset({
       tint: D.tint, tend: D.tend,
       flag_k: false, flag_a: false, flag_t: false, flag_v: true,
     });
     this.visualizationForm.reset({
-      viz_deform: 0, viz_hflowmin: 0.1, viz_hflowref: 5.0, viz_htsunref: 5.0,
+      viz_hflowmin: 0.1, viz_hflowref: 5.0, viz_htsunref: 5.0,
       viz_hcontmin: 1, viz_hcontmax: 100, viz_hcontint: 2000,
       viz_zcontmin: 100, viz_zcontmax: -11000, viz_zcontint: 9000,
       viz_pred: 100, viz_pgreen: 0.60, viz_pblue: 0.25, viz_pexp: 0.15,
@@ -731,7 +678,6 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       prefix: project.experiments[0].name,
       cellsize: p.cellsize ?? DEFAULTS.cellsize,
       phases: phases,
-      ctopo: (p.ctopo ?? 0) === 1,
       limiter: p.limiter ?? 1,
       gravity: p.gravity ?? 9.81,
       cores: p.cores ?? 8,
@@ -739,12 +685,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       threshold2: p.thresholds?.[1] ?? DEFAULTS.thresholds[1],
       threshold3: p.thresholds?.[2] ?? DEFAULTS.thresholds[2],
       threshold4: p.thresholds?.[3] ?? DEFAULTS.thresholds[3],
-      threshold5: p.thresholds?.[4] ?? DEFAULTS.thresholds[4],
       cfl_number: p.cfl?.[0] ?? DEFAULTS.cfl[0],
       cfl_timestep: p.cfl?.[1] ?? DEFAULTS.cfl[1],
-      slomo_time: p.slomo?.[0] ?? 1.0,
-      slomo_viscosity: p.slomo?.[1] ?? 1.0,
-      slomo_flux: p.slomo?.[2] ?? 1.0,
+      slomo: p.slomo ?? '1',
       flag_m: p.flag_m ?? false,
       sampling: p.sampling ?? 100,
       aoi_north: p.aoicoords?.[0] ?? null,
@@ -773,20 +716,16 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       friction6: friction[6], friction7: friction[7], friction8: friction[8],
       cohesion0: cohesion[0], cohesion1: cohesion[1], cohesion2: cohesion[2],
       viscosity0: viscosity[0], viscosity1: viscosity[1], viscosity2: viscosity[2],
-      deformation0: p.deformation?.[0] ?? 1.0, deformation1: p.deformation?.[1] ?? 1.0, deformation2: p.deformation?.[2] ?? 1.0,
-      clayers: (p.clayers ?? 0) === 1, cdispersion: (p.cdispersion ?? 0) === 1, csurface: p.csurface ?? 0,
+      clayers: (p.clayers ?? 0) === 1,
       drag0: p.drag?.[0] ?? DEFAULTS.drag[0], drag1: p.drag?.[1] ?? DEFAULTS.drag[1], drag2: p.drag?.[2] ?? DEFAULTS.drag[2],
       drag3: p.drag?.[3] ?? DEFAULTS.drag[3], drag4: p.drag?.[4] ?? DEFAULTS.drag[4], drag5: p.drag?.[5] ?? DEFAULTS.drag[5],
       vm0: p.virtualmass?.[0] ?? DEFAULTS.virtualmass[0], vm1: p.virtualmass?.[1] ?? DEFAULTS.virtualmass[1], vm2: p.virtualmass?.[2] ?? DEFAULTS.virtualmass[2],
       slidepar0: p.slidepar?.[0] ?? 0, slidepar1: p.slidepar?.[1] ?? 0, slidepar2: p.slidepar?.[2] ?? 0,
       slidepar3: p.slidepar?.[3] ?? 0, slidepar4: p.slidepar?.[4] ?? 0, slidepar5: p.slidepar?.[5] ?? 0,
-      shearing: p.shearing ?? 0,
-      fragmentation0: p.fragmentation?.[0] ?? 0, fragmentation1: p.fragmentation?.[1] ?? 0,
-      ambient: p.ambient ?? 0,
     });
 
     // Spatial overrides
-    const spatialKeys = ['phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3', 'addfri1', 'addfri2', 'addfri3', 'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3', 'cdeform', 'zfrag', 'ambdrag', 'frictiograph', 'tslide'];
+    const spatialKeys = ['phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3', 'ny1', 'ny2', 'ny3', 'tufri', 'flufri', 'cvshear', 'deltab', 'frictiograph', 'tslide'];
     const spatialPatch: any = {};
     for (const key of spatialKeys) { spatialPatch[key] = p[key] || null; }
     this.materialsForm.patchValue(spatialPatch);
@@ -801,10 +740,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       centr: p.centr || null,
       cstopping: p.cstopping ?? 0,
       tstop: p.tstop || null,
-      cmelt: (p.cmelt ?? 0) === 1,
       transformation0: p.transformation?.[0] ?? 0, transformation1: p.transformation?.[1] ?? 0, transformation2: p.transformation?.[2] ?? 0,
-      melting0: p.melting?.[0] ?? 0, melting1: p.melting?.[1] ?? 0, melting2: p.melting?.[2] ?? 0,
-      melting3: p.melting?.[3] ?? 0.2, melting4: p.melting?.[4] ?? 0.5,
       ctrans12: p.ctrans12 || null, ctrans13: p.ctrans13 || null, ctrans23: p.ctrans23 || null,
       transformograph: p.transformograph || null,
     });
@@ -821,15 +757,15 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
 
     if (p.visualization) {
       this.visualizationForm.patchValue({
-        viz_deform: p.visualization[0] ?? 0, viz_hflowmin: p.visualization[1] ?? 0.1,
-        viz_hflowref: p.visualization[2] ?? 5.0, viz_htsunref: p.visualization[3] ?? 5.0,
-        viz_hcontmin: p.visualization[4] ?? 1, viz_hcontmax: p.visualization[5] ?? 100,
-        viz_hcontint: p.visualization[6] ?? 2000,
-        viz_zcontmin: p.visualization[7] ?? 100, viz_zcontmax: p.visualization[8] ?? -11000,
-        viz_zcontint: p.visualization[9] ?? 9000,
-        viz_pred: p.visualization[10] ?? 100, viz_pgreen: p.visualization[11] ?? 0.60,
-        viz_pblue: p.visualization[12] ?? 0.25, viz_pexp: p.visualization[13] ?? 0.15,
-        viz_phexagg: p.visualization[14] ?? 0.2, viz_pvpath: p.visualization[15] ?? 1.0,
+        viz_hflowmin: p.visualization[0] ?? 0.1,
+        viz_hflowref: p.visualization[1] ?? 5.0, viz_htsunref: p.visualization[2] ?? 5.0,
+        viz_hcontmin: p.visualization[3] ?? 1, viz_hcontmax: p.visualization[4] ?? 100,
+        viz_hcontint: p.visualization[5] ?? 2000,
+        viz_zcontmin: p.visualization[6] ?? 100, viz_zcontmax: p.visualization[7] ?? -11000,
+        viz_zcontint: p.visualization[8] ?? 9000,
+        viz_pred: p.visualization[9] ?? 100, viz_pgreen: p.visualization[10] ?? 0.60,
+        viz_pblue: p.visualization[11] ?? 0.25, viz_pexp: p.visualization[12] ?? 0.15,
+        viz_phexagg: p.visualization[13] ?? 0.2, viz_pvpath: p.visualization[14] ?? 1.0,
       });
     }
     if (p.pbgr) this.visualizationForm.patchValue({ pbgr: p.pbgr });
@@ -846,9 +782,8 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
       'vinx1', 'viny1', 'vinx2', 'viny2', 'vinx3', 'viny3',
       'centr', 'tstop',
       'phi1', 'phi2', 'phi3', 'delta1', 'delta2', 'delta3',
-      'addfri1', 'addfri2', 'addfri3',
-      'coh1', 'coh2', 'coh3', 'ny1', 'ny2', 'ny3',
-      'cdeform', 'zfrag', 'ambdrag', 'tslide',
+      'ny1', 'ny2', 'ny3',
+      'tufri', 'flufri', 'cvshear', 'deltab', 'tslide',
       'ctrans12', 'ctrans13', 'ctrans23',
       'pbgr', 'pbgg', 'pbgb',
     ];
