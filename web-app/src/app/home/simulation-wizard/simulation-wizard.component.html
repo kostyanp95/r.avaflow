@@ -73,7 +73,7 @@
             </nz-form-control>
           </nz-form-item>
 
-          <nz-form-item>
+          <nz-form-item *ngIf="isMultipleRuns">
             <nz-form-label>{{ 'wizard.step0.cores' | translate }}
               <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
                     nz-tooltip [nzTooltipTitle]="'wizard.step0.coresTooltip' | translate"></span>

@@ -629,3 +629,24 @@ body.dark-theme {
     }
   }
 }
+
+// ── Global: highlight user-modified form fields with green border ──
+
+nz-input-number.ng-dirty:not(.ng-invalid) .ant-input-number {
+  border-color: #52c41a !important;
+  border-width: 2px !important;
+}
+
+nz-select.ng-dirty:not(.ng-invalid) .ant-select-selector {
+  border-color: #52c41a !important;
+  border-width: 2px !important;
+}
+
+input.ant-input.ng-dirty:not(.ng-invalid) {
+  border-color: #52c41a !important;
+  border-width: 2px !important;
+}
+
+nz-switch.ng-dirty .ant-switch {
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.3) !important;
+}
