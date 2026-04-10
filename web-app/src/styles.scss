@@ -631,8 +631,10 @@ body.dark-theme {
 }
 
 // ── Global: highlight user-modified form fields with green border ──
+// nz-input-number host element itself carries .ant-input-number,
+// so we target the host directly (no descendant combinator).
 
-nz-input-number.ng-dirty:not(.ng-invalid) .ant-input-number {
+nz-input-number.ng-dirty:not(.ng-invalid) {
   border-color: #52c41a !important;
   border-width: 2px !important;
 }

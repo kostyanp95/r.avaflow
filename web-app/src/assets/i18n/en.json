@@ -97,6 +97,7 @@
       "title": "Terrain & Release",
       "subtitle": "Upload rasters and configure elevation, release heights, velocities, and hydrographs.",
       "uploadButton": "Upload raster files",
+      "uploadDragText": "Click or drag raster files here to upload",
       "uploadHint": "Supports GeoTIFF (.tif, .tiff) and ASCII Grid (.asc) formats",
       "elevation": "Elevation (DEM)",
       "elevationTooltip": "Input DEM raster. In the release area, elevation = bottom of flow. Required.\n\nAffects: all topographic computations.",
