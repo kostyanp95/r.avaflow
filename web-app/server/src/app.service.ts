@@ -346,9 +346,9 @@ export class AppService {
       throw new Error('Time array [tint, tend] is required');
     }
 
-    // 1. Build flags
-    let flags = '-e';
-    if (p.flag_v) flags += ' -v';
+    // 1. Build flags (-e = execute, -v = visualize; both needed for R plots)
+    let flags = '-e -v';
+    if (p.flag_v === false) flags = '-e'; // allow explicit opt-out
     if (p.flag_k) flags += ' -k';
     if (p.flag_a) flags += ' -a';
     if (p.flag_t) flags += ' -t';
