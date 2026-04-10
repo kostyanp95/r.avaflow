@@ -86,7 +86,12 @@
       "flagMTooltip": "Enable Monte Carlo multiple model runs with parameter sampling.\n\nAffects: single vs ensemble mode.",
       "samplingTooltip": "Number of random parameter samples (+N), controlled (0), or OAT sensitivity (-N).\n\nAffects: MC run count and method.",
       "aoiGroupTooltip": "Restrict computation to a sub-region of the DEM. Leave empty for full extent.\n\nAffects: computation domain.",
-      "aoiTooltip": "Area of interest coordinate (N/S/W/E) to restrict computation domain. Leave empty to use full DEM extent.\n\nAffects: computation domain."
+      "aoiTooltip": "Area of interest coordinate (N/S/W/E) to restrict computation domain. Leave empty to use full DEM extent.\n\nAffects: computation domain.",
+      "cellSizeDetected": "Detected from uploaded rasters: {{cellsize}} m",
+      "cellsizeConfirmTitle": "Cell size not specified",
+      "cellsizeConfirmContent": "Cell size will be determined automatically from the DEM raster (detected: {{cellsize}} m). This ensures exact alignment with the input data. Continue?",
+      "cellsizeConfirmOk": "Use auto cellsize",
+      "cellsizeConfirmCancel": "Set manually"
     },
     "step1": {
       "title": "Terrain & Release",

@@ -365,10 +365,13 @@ export class AppService {
     // Start building command parts (will be joined with line continuations)
     const parts: string[] = [];
 
-    // Flags + prefix + cellsize + phases (first line)
-    parts.push(
-      `${this.avaflowModule} ${flags} prefix=${this.sanitizeProjectName(experiment.name)} cellsize=${this.validateNumber(p.cellsize, 'cellsize')} phases=${phasesStr}`,
-    );
+    // Flags + prefix + phases (first line), cellsize only if set
+    let firstLine = `${this.avaflowModule} ${flags} prefix=${this.sanitizeProjectName(experiment.name)}`;
+    if (p.cellsize) {
+      firstLine += ` cellsize=${this.validateNumber(p.cellsize, 'cellsize')}`;
+    }
+    firstLine += ` phases=${phasesStr}`;
+    parts.push(firstLine);
 
     // 3. Elevation (always required)
     parts.push(`  elevation=${this.stripExt(this.sanitizeFilename(p.elevation))}`);
@@ -583,11 +586,25 @@ export class AppService {
     });
   }
 
+  private detectCellsize(filePath: string): number | null {
+    try {
+      const output = execSync(`gdalinfo "${filePath}" 2>/dev/null`).toString();
+      const match = output.match(/Pixel Size = \(([\d.]+),/);
+      if (match) return parseFloat(match[1]);
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   async saveFiles(files: Express.Multer.File[]): Promise<any> {
-    const filesInfo = files.map((file) => ({
-      name: file.originalname,
-      path: file.path,
-    }));
+    const filesInfo = files.map((file) => {
+      const info: any = { name: file.originalname, path: file.path };
+      if (file.originalname.match(/\.(tif|tiff)$/i)) {
+        info.cellsize = this.detectCellsize(file.path);
+      }
+      return info;
+    });
 
     this.appGateway.server.emit('filesUploaded', { filesUploaded: filesInfo });
 

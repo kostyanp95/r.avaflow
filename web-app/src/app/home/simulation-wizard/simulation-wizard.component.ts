@@ -3,7 +3,9 @@ import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors }
 import { HttpClient } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzUploadChangeParam } from 'ng-zorro-antd/upload';
+import { TranslateService } from '@ngx-translate/core';
 import { WebSocketService } from '../../web-socket.service';
 import { DEFAULTS, RastersFromServer } from '../models/models';
 import { APP_CONFIG } from '../../../environments/environment';
@@ -20,6 +22,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
   apiUrl = APP_CONFIG.apiUrl;
   currentStep = 0;
   availableRasters: string[] = [];
+  detectedCellsize: number | null = null;
 
   stepKeys = [
     'wizard.steps.projectSetup',
@@ -51,7 +54,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private http: HttpClient,
     private ws: WebSocketService,
-    private message: NzMessageService
+    private message: NzMessageService,
+    private modal: NzModalService,
+    private translate: TranslateService
   ) {
     const D = DEFAULTS;
 
@@ -59,7 +64,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     this.setupForm = this.fb.group({
       name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/)]],
       prefix: [D.prefix, [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]+$/), Validators.maxLength(20)]],
-      cellsize: [D.cellsize, [Validators.required, Validators.min(1)]],
+      cellsize: [null, [Validators.min(1)]],
       phases: [D.phases],
       limiter: [D.limiter],
       gravity: [D.gravity, [Validators.required, Validators.min(0.01)]],
@@ -200,6 +205,9 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
         if (!this.availableRasters.includes(f.name)) {
           this.availableRasters.push(f.name);
         }
+        if (f.cellsize && !this.detectedCellsize) {
+          this.detectedCellsize = f.cellsize;
+        }
       });
     };
     this.ws.socket$.on('filesUploaded', this.filesUploadedHandler);
@@ -268,16 +276,41 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     return this.currentFormGroup.valid;
   }
 
-  goToStep(step: number): void {
+  async goToStep(step: number): Promise<void> {
     if (step >= 0 && step <= 6) {
+      if (this.currentStep === 0 && step > 0) {
+        const ok = await this.confirmCellsize();
+        if (!ok) return;
+      }
       this.currentStep = step;
     }
   }
 
-  next(): void {
+  async next(): Promise<void> {
+    if (this.currentStep === 0) {
+      const ok = await this.confirmCellsize();
+      if (!ok) return;
+    }
     if (this.currentStep < 6) {
       this.currentStep++;
     }
+  }
+
+  private confirmCellsize(): Promise<boolean> {
+    if (this.setupForm.value.cellsize) return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      this.modal.confirm({
+        nzTitle: this.translate.instant('wizard.step0.cellsizeConfirmTitle'),
+        nzContent: this.translate.instant('wizard.step0.cellsizeConfirmContent', {
+          cellsize: this.detectedCellsize || '?'
+        }),
+        nzOkText: this.translate.instant('wizard.step0.cellsizeConfirmOk'),
+        nzCancelText: this.translate.instant('wizard.step0.cellsizeConfirmCancel'),
+        nzOnOk: () => resolve(true),
+        nzOnCancel: () => resolve(false)
+      });
+    });
   }
 
   prev(): void {
@@ -306,7 +339,7 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
     const mp = this.isMultiPhase;
 
     const params: any = {
-      cellsize: s.cellsize,
+      cellsize: s.cellsize || null,
       phases: s.phases,
       limiter: s.limiter,
       gravity: s.gravity,
@@ -448,7 +481,10 @@ export class SimulationWizardComponent implements OnInit, OnDestroy {
 
     const parts: string[] = [];
     const phasesStr = p.phases === 1 ? 's' : 's,fs,f';
-    parts.push(`r.avaflow ${flags.join(' ')} prefix=${payload.experiments[0].name} cellsize=${p.cellsize} phases=${phasesStr} \\`);
+    let firstLine = `r.avaflow ${flags.join(' ')} prefix=${payload.experiments[0].name}`;
+    if (p.cellsize) firstLine += ` cellsize=${p.cellsize}`;
+    firstLine += ` phases=${phasesStr} \\`;
+    parts.push(firstLine);
     parts.push(`  elevation=${elev} \\`);
 
     // Optional rasters
