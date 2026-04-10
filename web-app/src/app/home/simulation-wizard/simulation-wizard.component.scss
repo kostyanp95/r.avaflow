@@ -622,3 +622,29 @@
 .form-grid {
   gap: 12px;
 }
+
+// ── User-modified fields: green border highlight ──
+
+::ng-deep {
+  nz-input-number.ng-dirty:not(.ng-invalid) .ant-input-number {
+    border-color: #52c41a;
+    border-width: 2px;
+    transition: border-color 0.3s;
+  }
+
+  nz-select.ng-dirty:not(.ng-invalid) .ant-select-selector {
+    border-color: #52c41a !important;
+    border-width: 2px !important;
+    transition: border-color 0.3s;
+  }
+
+  input.ant-input.ng-dirty:not(.ng-invalid) {
+    border-color: #52c41a;
+    border-width: 2px;
+    transition: border-color 0.3s;
+  }
+
+  nz-switch.ng-dirty .ant-switch {
+    box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.3);
+  }
+}
