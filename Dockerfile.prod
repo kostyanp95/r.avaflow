@@ -59,10 +59,10 @@ RUN curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B827C12
       libgdal-dev python3-gdal gdal-bin && \
     rm -rf /var/lib/apt/lists/*
 
-# GRASS GIS
+# GRASS GIS + ImageMagick (for GIF animation generation)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      grass-core grass-dev git make gcc g++ libgomp1 && \
+      grass-core grass-dev git make gcc g++ libgomp1 imagemagick && \
     rm -rf /var/lib/apt/lists/*
 
 # R statistical software
@@ -75,13 +75,17 @@ RUN curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc 
     rm -rf /var/lib/apt/lists/*
 
 # R packages (classic — no deprecated rgdal/rgeos/maptools)
-RUN R -q -e 'install.packages(c("stats","foreign","sp","sf","terra","raster","ROCR","fmsb","Rcpp"), lib="/usr/lib/R/library/", repos="https://cloud.r-project.org")'
+RUN R -q -e 'install.packages(c("stats","foreign","sp","sf","terra","raster","lattice","ROCR","fmsb","Rcpp"), lib="/usr/lib/R/library/", repos="https://cloud.r-project.org")'
 
 # Install r.avaflow addon in GRASS GIS
 WORKDIR /build
 COPY avaflow/ ./avaflow/
 RUN grass -c XY ./temp_grassdb/temp_location/ --exec g.extension extension=r.avaflow url=/build/avaflow/ && \
-    rm -rf ./temp_grassdb
+    rm -rf ./temp_grassdb && \
+    find /root/.grass8 -name "r.avaflow.map.R" \
+      -exec sed -i 's/library(maptools, quietly = T)/#library(maptools)/' {} \; \
+      -exec sed -i 's/library(rgdal, quietly = T)/#library(rgdal)/' {} \; \
+      -exec sed -i "s/options('rgdal_show_exportToProj4_warnings'='none')/#options('rgdal')/" {} \;
 
 # Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
