@@ -80,12 +80,21 @@ RUN R -q -e 'install.packages(c("stats","foreign","sp","sf","terra","raster","la
 # Install r.avaflow addon in GRASS GIS
 WORKDIR /build
 COPY avaflow/ ./avaflow/
+# Deprecated R libraries removed from C source (main.c no longer emits library(maptools/rgdal)).
+# Stub packages provide shims in case an older binary still references them.
 RUN grass -c XY ./temp_grassdb/temp_location/ --exec g.extension extension=r.avaflow url=/build/avaflow/ && \
-    rm -rf ./temp_grassdb && \
-    find /root/.grass8 -name "r.avaflow.map.R" \
-      -exec sed -i 's/library(maptools, quietly = T)/#library(maptools)/' {} \; \
-      -exec sed -i 's/library(rgdal, quietly = T)/#library(rgdal)/' {} \; \
-      -exec sed -i "s/options('rgdal_show_exportToProj4_warnings'='none')/#options('rgdal')/" {} \;
+    rm -rf ./temp_grassdb
+RUN R -q --no-save -e "\
+  dir.create('/tmp/maptools', showWarnings=FALSE); \
+  writeLines(c('Package: maptools','Version: 0.0.1','Title: Stub','Description: Placeholder','License: GPL-2'), '/tmp/maptools/DESCRIPTION'); \
+  writeLines('# empty', '/tmp/maptools/NAMESPACE'); \
+  install.packages('/tmp/maptools', repos=NULL, type='source', lib='/usr/lib/R/library'); \
+  dir.create('/tmp/rgdal/R', recursive=TRUE, showWarnings=FALSE); \
+  writeLines(c('Package: rgdal','Version: 0.0.1','Title: Stub','Description: readGDAL shim via raster','License: GPL-2','Imports: raster, sp'), '/tmp/rgdal/DESCRIPTION'); \
+  writeLines(c('export(readGDAL)','import(raster)','import(sp)'), '/tmp/rgdal/NAMESPACE'); \
+  writeLines('readGDAL <- function(fname, ...) { r <- raster::raster(fname); as(r, \"SpatialGridDataFrame\") }', '/tmp/rgdal/R/readGDAL.R'); \
+  install.packages('/tmp/rgdal', repos=NULL, type='source', lib='/usr/lib/R/library'); \
+  unlink(c('/tmp/maptools','/tmp/rgdal'), recursive=TRUE)"
 
 # Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
