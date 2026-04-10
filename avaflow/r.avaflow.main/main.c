@@ -10829,7 +10829,7 @@ int main ( int argc, char *argv[] ) { // calling main function
         fprintf(f_rroc, "##############################################################################\n");
         fprintf(f_rroc, "\n");
         fprintf(f_rroc, "# Loading libraries\n");
-        fprintf(f_rroc, "library(rgdal)\n");
+        fprintf(f_rroc, "library(raster)\n");
         fprintf(f_rroc, "library(ROCR)\n");
         fprintf(f_rroc, "\n");
         fprintf(f_rroc, "# Importing arguments (defined in r.avaflow.py)\n");
@@ -10884,8 +10884,8 @@ int main ( int argc, char *argv[] ) { // calling main function
         fprintf(f_rroc, "# Generating data frames from raster maps\n");
         fprintf(f_rroc, "observ <- paste(temppath, '/observed', mstring, '.asc', sep= '')\n");
         fprintf(f_rroc, "ind <- paste(temppath, '/index', mstring, '.asc', sep= '')\n");
-        fprintf(f_rroc, "observed <- readGDAL(fname = observ)  #observation\n");
-        fprintf(f_rroc, "index <- readGDAL(fname = ind)  #index\n");
+        fprintf(f_rroc, "observed <- as(raster(observ), 'SpatialGridDataFrame')  #observation\n");
+        fprintf(f_rroc, "index <- as(raster(ind), 'SpatialGridDataFrame')  #index\n");
         fprintf(f_rroc, "\n");
         fprintf(f_rroc, "# Preprocessing data frames\n");
         fprintf(f_rroc, "index$band1[index$band1 < 0] <- NaN\n");
@@ -11884,22 +11884,17 @@ int main ( int argc, char *argv[] ) { // calling main function
         fprintf(f_rmap, "##############################################################################\n");
         fprintf(f_rmap, "\n");
         fprintf(f_rmap, "# Loading libraries\n");
-        fprintf(f_rmap, "options('rgdal_show_exportToProj4_warnings'='none')\n");
         fprintf(f_rmap, "options(warn = -1)\n");
-        
+
         if ( strcmp( rlibs, "None" ) ==  0 ) {
 
             fprintf(f_rmap, "library(sp, quietly = T)\n");
-            fprintf(f_rmap, "library(maptools, quietly = T)\n");
-            fprintf(f_rmap, "library(rgdal, quietly = T)\n");
             fprintf(f_rmap, "library(raster, quietly = T)\n");
-            
+
         } else {
 
-            fprintf(f_rmap, "library(sp, lib.loc = '%s', quietly = T)\n", rlibs );  
-            fprintf(f_rmap, "library(maptools, lib.loc = '%s', quietly = T)\n", rlibs );
-            fprintf(f_rmap, "library(rgdal, lib.loc = '%s', quietly = T)\n", rlibs );
-            fprintf(f_rmap, "library(raster, lib.loc = '%s', quietly = T)\n", rlibs );       
+            fprintf(f_rmap, "library(sp, lib.loc = '%s', quietly = T)\n", rlibs );
+            fprintf(f_rmap, "library(raster, lib.loc = '%s', quietly = T)\n", rlibs );
         }
         
         fprintf(f_rmap, "\n");
