@@ -87,6 +87,11 @@ export class AppController {
     return this.appService.stopSimulation();
   }
 
+  @Get('run/cpus')
+  getCpuCores() {
+    return { cpus: parseInt(process.env.OMP_NUM_THREADS || '8', 10) };
+  }
+
   @Put('run/cpus')
   updateCpus(@Body() body: { cpus: number }) {
     return this.appService.updateCpuLimit(body.cpus);

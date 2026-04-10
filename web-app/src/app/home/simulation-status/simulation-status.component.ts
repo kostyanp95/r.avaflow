@@ -39,6 +39,10 @@ export class SimulationStatusComponent implements OnInit, OnDestroy, AfterViewCh
   constructor(private ws: WebSocketService, private http: HttpClient, private message: NzMessageService) {}
 
   ngOnInit(): void {
+    this.http.get<{ cpus: number }>(`${APP_CONFIG.apiUrl}/run/cpus`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(res => this.cpuCores = res.cpus);
+
     this.ws.onSimulationLog()
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {

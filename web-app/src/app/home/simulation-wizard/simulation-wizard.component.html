@@ -273,16 +273,19 @@
 
       <div class="upload-area">
         <nz-upload
+          nzType="drag"
           [nzAction]="apiUrl + '/upload'"
           [nzMultiple]="true"
-          [nzShowUploadList]="false"
+          nzName="file"
           [nzData]="{ projectName: setupForm.value.name }"
+          [nzAccept]="'.tif,.tiff,.asc'"
           (nzChange)="handleUploadChange($event)">
-          <button nz-button nzType="primary">
-            <span nz-icon nzType="upload"></span> {{ 'wizard.step1.uploadButton' | translate }}
-          </button>
+          <p class="ant-upload-drag-icon">
+            <span nz-icon nzType="inbox"></span>
+          </p>
+          <p class="ant-upload-text">{{ 'wizard.step1.uploadDragText' | translate }}</p>
+          <p class="ant-upload-hint">{{ 'wizard.step1.uploadHint' | translate }}</p>
         </nz-upload>
-        <div class="upload-hint">{{ 'wizard.step1.uploadHint' | translate }}</div>
       </div>
 
       <form nz-form nzLayout="vertical" [formGroup]="terrainForm">
