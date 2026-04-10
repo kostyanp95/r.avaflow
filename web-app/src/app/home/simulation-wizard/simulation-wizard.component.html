@@ -49,12 +49,17 @@
 
         <div class="form-grid cols-3">
           <nz-form-item>
-            <nz-form-label nzRequired>{{ 'wizard.step0.cellSize' | translate }}
+            <nz-form-label>{{ 'wizard.step0.cellSize' | translate }}
               <span nz-icon nzType="info-circle" nzTheme="outline" class="field-info"
                     nz-tooltip [nzTooltipTitle]="'wizard.step0.cellSizeTooltip' | translate"></span>
             </nz-form-label>
             <nz-form-control [nzErrorTip]="'wizard.step0.cellSizeError' | translate">
-              <nz-input-number formControlName="cellsize" [nzMin]="1" [nzStep]="1" style="width: 100%;"></nz-input-number>
+              <nz-input-number formControlName="cellsize" [nzMin]="1" [nzStep]="1"
+                               [nzPlaceHolder]="detectedCellsize ? ('Auto: ' + detectedCellsize + 'm') : 'Auto from DEM'"
+                               style="width: 100%;"></nz-input-number>
+              <div class="ant-form-item-extra" *ngIf="detectedCellsize">
+                {{ 'wizard.step0.cellSizeDetected' | translate:{ cellsize: detectedCellsize } }}
+              </div>
             </nz-form-control>
           </nz-form-item>
 

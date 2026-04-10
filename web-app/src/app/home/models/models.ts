@@ -65,6 +65,7 @@ export interface RasterFromServer {
   name: string;
   path?: string;
   values?: Array<string>;
+  cellsize?: number;
 }
 
 export interface RastersFromServer {
