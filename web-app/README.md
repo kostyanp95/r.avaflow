@@ -1,180 +1,267 @@
-[![Angular Logo](https://www.vectorlogo.zone/logos/angular/angular-icon.svg)](https://angular.io/) [![Electron Logo](https://www.vectorlogo.zone/logos/electronjs/electronjs-icon.svg)](https://electronjs.org/)
+<div align="center">
 
-![Maintained][maintained-badge]
-[![Make a pull request][prs-badge]][prs]
-[![License][license-badge]](LICENSE.md)
+# r.avaflow · web-app
 
-[![Linux Build][linux-build-badge]][linux-build]
-[![MacOS Build][macos-build-badge]][macos-build]
-[![Windows Build][windows-build-badge]][windows-build]
+**Angular 15 + NestJS 9 full-stack application that drives the `r.avaflow` simulation engine.**
 
-[![Watch on GitHub][github-watch-badge]][github-watch]
-[![Star on GitHub][github-star-badge]][github-star]
-[![Tweet][twitter-badge]][twitter]
+Frontend (`src/`) and backend (`server/`) ship together as a single Docker image exposing a browser UI on port `3000`.
 
-# Introduction
+[![Angular](https://img.shields.io/badge/Angular-15.2-DD0031?logo=angular&logoColor=white)](https://angular.io)
+[![NestJS](https://img.shields.io/badge/NestJS-9-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
+[![Ant Design](https://img.shields.io/badge/ng--zorro--antd-15-0170FE)](https://ng.ant.design)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.6-010101?logo=socket.io&logoColor=white)](https://socket.io)
+[![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
+[![Node](https://img.shields.io/badge/Node-%E2%89%A518.10-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-Bootstrap and package your project with Angular 15 and Electron 21 (Typescript + SASS + Hot Reload) for creating Desktop applications.
+[🇷🇺 Русская версия](./README_ru.md) · [⬅ Back to top-level README](../README.md)
 
-Currently runs with:
+</div>
 
-- Angular v15.1.5
-- Electron v23.1.0
+---
 
-With this sample, you can:
+## Table of contents
 
-- Run your app in a local development environment with Electron & Hot reload
-- Run your app in a production environment
-- Package your app into an executable file for Linux, Windows & Mac
+- [At a glance](#at-a-glance)
+- [Directory layout](#directory-layout)
+- [Quick start](#quick-start)
+- [Build & deploy](#build--deploy)
+- [Environment variables](#environment-variables)
+- [Testing](#testing)
+- [HTTP API](#http-api)
+- [WebSocket events](#websocket-events)
+- [How it works end-to-end](#how-it-works-end-to-end)
+- [Reports & references](#reports--references)
+- [License](#license)
 
-/!\ Hot reload only pertains to the renderer process. The main electron process is not able to be hot reloaded, only restarted.
+---
 
-/!\ Angular CLI & Electron Builder needs Node 14 or later to work correctly.
+## At a glance
 
-## Getting Started
+| Layer | Technology |
+|---|---|
+| **Frontend** | Angular 15.2 · ng-zorro-antd 15 (Ant Design) · TypeScript 4.8 · SCSS |
+| **Backend** | NestJS 9 · Express · Socket.IO 4.6 · Multer · Archiver |
+| **Real-time** | WebSocket (Socket.IO) — simulation logs, status, events |
+| **Testing** | Playwright (E2E) · Karma + Jasmine (Angular unit) · Jest (NestJS) |
+| **i18n** | `@ngx-translate/core` — English, Russian |
+| **Runtime** | Node ≥ 18.10 · Docker (to actually run simulations) |
 
-*Clone this repository locally:*
+The NestJS backend serves the compiled Angular bundle via `@nestjs/serve-static`, so in production **everything lives behind a single port** (`:3000`). No reverse proxy, no separate frontend host.
 
-``` bash
-git clone https://github.com/maximegris/angular-electron.git
+---
+
+## Directory layout
+
+```
+web-app/
+├── src/                              # Angular SPA
+│   ├── app/
+│   │   ├── home/                     # Main feature module
+│   │   │   ├── simulation-wizard/    # 7-step parameter form
+│   │   │   ├── simulation-status/    # Live log panel, CPU/RAM gauges
+│   │   │   ├── simulation-results/   # Image grid, file browser, ZIP export
+│   │   │   └── project-form/         # Project CRUD sidebar
+│   │   ├── core/services/            # ThemeService, WebSocketService
+│   │   └── shared/                   # Shared components
+│   ├── assets/i18n/                  # en.json, ru.json translations
+│   └── environments/                 # environment.ts / .prod.ts / .web.ts
+│
+├── server/                           # NestJS backend
+│   └── src/
+│       ├── app.controller.ts         # REST: /projects, /run, /upload, /health
+│       ├── app.gateway.ts            # WebSocket: simulationLog, simulationDone, ...
+│       ├── app.service.ts            # Business logic: script gen, engine spawn
+│       └── storage-options.ts        # Multer disk-storage config
+│
+├── e2e/                              # Playwright specs
+│   ├── simulation-wizard.spec.ts
+│   ├── simulation-status.spec.ts
+│   ├── project-management.spec.ts
+│   └── playwright.config.ts
+│
+├── Dockerfile                        # Local build image
+├── PARAMETER_REFERENCE.md            # Every parameter · tooltip · validation rule
+├── FORM_COMPARISON_REPORT.md         # Coverage vs. original r.avaflow form
+├── KOLKA_CALIBRATION_REPORT.md       # Ice-rock avalanche calibration recipe
+└── QA_REPORT.md                      # Bug-fix history
 ```
 
-*Install dependencies with npm (used by Electron renderer process):*
+---
 
-``` bash
+## Quick start
+
+### Prerequisites
+
+- **Node.js** ≥ 18.10 (tested against 18 / 20)
+- **npm** (bundled with Node)
+- **Docker** — required to actually run simulations (the backend spawns a GRASS-GIS container)
+
+### Install
+
+```bash
+cd web-app
 npm install
+npm install --prefix server
 ```
 
-There is an issue with `yarn` and `node_modules` when the application is built by the packager. Please use `npm` as dependencies manager.
+### Develop (hot-reload, both processes)
 
-If you want to generate Angular components with Angular-cli , you **MUST** install `@angular/cli` in npm global context.
-Please follow [Angular-cli documentation](https://github.com/angular/angular-cli) if you had installed a previous version of `angular-cli`.
-
-``` bash
-npm install -g @angular/cli
+```bash
+npm run start:dev
 ```
 
-*Install NodeJS dependencies with npm (used by Electron main process):*
+Two processes start concurrently:
 
-``` bash
-cd app/
-npm install
+| Process | URL | Purpose |
+|---|---|---|
+| NestJS backend | <http://localhost:3000> | `/api` REST + WebSocket |
+| Angular dev server | <http://localhost:4200> | SPA with hot-reload, proxies to `:3000` |
+
+Open <http://localhost:4200> in your browser.
+
+### Run backend or frontend alone
+
+```bash
+npm --prefix server run start:dev    # backend only
+npm run ng:serve                     # frontend only (-c web profile)
 ```
 
-Why two package.json ? This project follow [Electron Builder two package.json structure](https://www.electron.build/tutorials/two-package-structure) in order to optimize final bundle and be still able to use Angular `ng add` feature.
+---
 
-## To build for development
+## Build & deploy
 
-- **in a terminal window** -> npm start
+### Production build
 
-Voila! You can use your Angular + Electron app in a local development environment with hot reload!
+```bash
+npm run web:build                    # Angular → dist/
+npm --prefix server run build        # NestJS → server/dist/
+```
 
-The application code is managed by `app/main.ts`. In this sample, the app runs with a simple Angular App (http://localhost:4200), and an Electron window. \
-The Angular component contains an example of Electron and NodeJS native lib import. \
-You can disable "Developer Tools" by commenting `win.webContents.openDevTools();` in `app/main.ts`.
+In production, NestJS serves `dist/` statically — a single container on port `3000` is enough.
 
-## Project structure
+### Docker (from repository root)
 
-| Folder | Description                                      |
-|--------|--------------------------------------------------|
-| app    | Electron main process folder (NodeJS)            |
-| src    | Electron renderer process folder (Web / Angular) |
+```bash
+docker build -f Dockerfile.prod -t r-avaflow:webapp .
+docker run -p 3000:3000 \
+  -e OMP_NUM_THREADS=8 \
+  -v avaflow-data:/data/projects \
+  r-avaflow:webapp
+```
 
-## How to import 3rd party libraries
+Pre-built image: `ghcr.io/kostyanp95/r-avaflow:webapp-latest`.
 
-This sample project runs in both modes (web and electron). To make this work, **you have to import your dependencies the right way**. \
+---
 
-There are two kind of 3rd party libraries :
-- NodeJS's one - Uses NodeJS core module (crypto, fs, util...)
-    - I suggest you add this kind of 3rd party library in `dependencies` of both `app/package.json` and `package.json (root folder)` in order to make it work in both Electron's Main process (app folder) and Electron's Renderer process (src folder).
+## Environment variables
 
-Please check `providers/electron.service.ts` to watch how conditional import of libraries has to be done when using NodeJS / 3rd party libraries in renderer context (i.e. Angular).
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | HTTP + WebSocket port |
+| `NODE_ENV` | — | `production` enables optimizations |
+| `AVAFLOW_PROJECTS_PATH` | `projects/` | Where per-project data is stored (mount this as a volume) |
+| `OMP_NUM_THREADS` | _(auto)_ | CPU thread count for the OpenMP-parallelized core |
 
-- Web's one (like bootstrap, material, tailwind...)
-    - It have to be added in `dependencies` of `package.json  (root folder)`
+---
 
-## Add a dependency with ng-add
+## Testing
 
-You may encounter some difficulties with `ng-add` because this project doesn't use the defaults `@angular-builders`. \
-For example you can find [here](HOW_TO.md) how to install Angular-Material with `ng-add`.
+### Angular unit tests — Karma + Jasmine
 
-## Browser mode
+```bash
+npm test               # headless, single run
+npm run test:watch     # watch mode
+```
 
-Maybe you only want to execute the application in the browser with hot reload? Just run `npm run ng:serve:web`.
+### NestJS unit + e2e — Jest
 
-## Included Commands
+```bash
+npm --prefix server test
+npm --prefix server run test:e2e
+```
 
-| Command                  | Description                                                                                           |
-|--------------------------|-------------------------------------------------------------------------------------------------------|
-| `npm run ng:serve`       | Execute the app in the web browser (DEV mode)                                                         |
-| `npm run web:build`      | Build the app that can be used directly in the web browser. Your built files are in the /dist folder. |
-| `npm run electron:local` | Builds your application and start electron locally                                                    |
-| `npm run electron:build` | Builds your application and creates an app consumable based on your operating system                  |
+### Full end-to-end — Playwright
 
-**Your application is optimised. Only /dist folder and NodeJS dependencies are included in the final bundle.**
+```bash
+npm run e2e            # builds prod bundle, then runs e2e/*.spec.ts
+npm run e2e:show-trace # inspect the latest trace
+```
 
-## You want to use a specific lib (like rxjs) in electron main thread ?
+E2E specs boot a real NestJS + Angular instance and walk through the 7-step wizard, file uploads, live simulation status and project CRUD.
 
-YES! You can do it! Just by importing your library in npm dependencies section of `app/package.json` with `npm install --save XXXXX`. \
-It will be loaded by electron during build phase and added to your final bundle. \
-Then use your library by importing it in `app/main.ts` file. Quite simple, isn't it?
+### Lint
 
-## E2E Testing
+```bash
+npm run lint
+```
 
-E2E Test scripts can be found in `e2e` folder.
+---
 
-| Command       | Description               |
-|---------------|---------------------------|
-| `npm run e2e` | Execute end to end tests  |
+## HTTP API
 
-Note: To make it work behind a proxy, you can add this proxy exception in your terminal  
-`export {no_proxy,NO_PROXY}="127.0.0.1,localhost"`
+All REST endpoints are mounted under `/api`, except the `/health` liveness probe.
 
-## Debug with VsCode
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Liveness probe (no `/api` prefix) |
+| `GET` | `/api/projects` | List projects |
+| `GET` | `/api/project?projectName=…` | Project config + file tree |
+| `POST` | `/api/project` | Create project |
+| `DELETE` | `/api/project/:name` | Delete project |
+| `POST` | `/api/upload` | Raster upload (Multer: field `files`, body `projectName`) |
+| `POST` | `/api/run` | Start simulation (spawns engine process) |
+| `POST` | `/api/run/stop` | Kill running simulation |
+| `GET` | `/api/project/:name/download` | Stream project ZIP (via `archiver`) |
 
-[VsCode](https://code.visualstudio.com/) debug configuration is available! In order to use it, you need the extension [Debugger for Chrome](https://marketplace.visualstudio.com/items?itemName=msjsdiag.debugger-for-chrome).
+---
 
-Then set some breakpoints in your application's source code.
+## WebSocket events
 
-Finally from VsCode press **Ctrl+Shift+D** and select **Application Debug** and press **F5**.
+Socket.IO connects to the same origin (no separate port). Server-emitted events:
 
-Please note that Hot reload is only available in Renderer process.
+| Event | Payload | Fired when |
+|---|---|---|
+| `simulationLog` | `{ projectName, line }` | Every stdout / stderr line from the engine |
+| `simulationDone` | `{ projectName, exitStatus }` | Engine process exits |
+| `filesUploaded` | `{ projectName, files }` | Upload completes |
+| `projectData` | `{ projectName, config, files }` | Project state refresh |
 
-## Want to use Angular Material ? Ngx-Bootstrap ?
+---
 
-Please refer to [HOW_TO file](./HOW_TO.md)
+## How it works end-to-end
 
-## Branch & Packages version
+```
+Browser (Angular SPA)
+   │   HTTP /api/upload, /api/run, /api/projects, …
+   │   WebSocket: simulationLog / simulationDone
+   ▼
+NestJS (port 3000)
+   │   - Serves Angular bundle (@nestjs/serve-static)
+   │   - REST controllers, WebSocket gateway
+   │   - Generates r.avaflow shell script from wizard parameters
+   │   - Spawns `docker run` with mounted project volume
+   ▼
+r.avaflow engine (GRASS GIS + C core)
+   │   - Reads rasters + param.txt
+   │   - OpenMP-parallelized NOC-TVD time loop
+   │   - Writes outputs (ASCII rasters, PNG, GIF, CSV)
+   ▼
+Results viewer (back in the browser)
+```
 
-- Angular 4 & Electron 1 : Branch [angular4](https://github.com/maximegris/angular-electron/tree/angular4)
-- Angular 5 & Electron 1 : Branch [angular5](https://github.com/maximegris/angular-electron/tree/angular5)
-- Angular 6 & Electron 3 : Branch [angular6](https://github.com/maximegris/angular-electron/tree/angular6)
-- Angular 7 & Electron 3 : Branch [angular7](https://github.com/maximegris/angular-electron/tree/angular7)
-- Angular 8 & Electron 7 : Branch [angular8](https://github.com/maximegris/angular-electron/tree/angular8)
-- Angular 9 & Electron 7 : Branch [angular9](https://github.com/maximegris/angular-electron/tree/angular9)
-- Angular 10 & Electron 9 : Branch [angular10](https://github.com/maximegris/angular-electron/tree/angular10)
-- Angular 11 & Electron 12 : Branch [angular11](https://github.com/maximegris/angular-electron/tree/angular11)
-- Angular 12 & Electron 16 : Branch [angular12](https://github.com/maximegris/angular-electron/tree/angular12)
-- Angular 13 & Electron 18 : Branch [angular13](https://github.com/maximegris/angular-electron/tree/angular13)
-- Angular 14 & Electron 21 : Branch [angular14](https://github.com/maximegris/angular-electron/tree/angular14)
-- Angular 15 & Electron 22 : (main)
+The wizard collects parameters, the backend **diffs them against defaults and emits only what changed** into the generated script (see `PARAMETER_REFERENCE.md`). Live logs stream over WebSocket while the simulation runs; on exit, the results viewer picks up generated PNGs/GIFs from the project volume.
 
-[maintained-badge]: https://img.shields.io/badge/maintained-yes-brightgreen
-[license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[license]: https://github.com/maximegris/angular-electron/blob/main/LICENSE.md
-[prs-badge]: https://img.shields.io/badge/PRs-welcome-red.svg
-[prs]: http://makeapullrequest.com
+---
 
-[linux-build-badge]: https://github.com/maximegris/angular-electron/workflows/Linux%20Build/badge.svg
-[linux-build]: https://github.com/maximegris/angular-electron/actions?query=workflow%3A%22Linux+Build%22
-[macos-build-badge]: https://github.com/maximegris/angular-electron/workflows/MacOS%20Build/badge.svg
-[macos-build]: https://github.com/maximegris/angular-electron/actions?query=workflow%3A%22MacOS+Build%22
-[windows-build-badge]: https://github.com/maximegris/angular-electron/workflows/Windows%20Build/badge.svg
-[windows-build]: https://github.com/maximegris/angular-electron/actions?query=workflow%3A%22Windows+Build%22
+## Reports & references
 
-[github-watch-badge]: https://img.shields.io/github/watchers/maximegris/angular-electron.svg?style=social
-[github-watch]: https://github.com/maximegris/angular-electron/watchers
-[github-star-badge]: https://img.shields.io/github/stars/maximegris/angular-electron.svg?style=social
-[github-star]: https://github.com/maximegris/angular-electron/stargazers
-[twitter]: https://twitter.com/intent/tweet?text=Check%20out%20angular-electron!%20https://github.com/maximegris/angular-electron%20%F0%9F%91%8D
-[twitter-badge]: https://img.shields.io/twitter/url/https/github.com/maximegris/angular-electron.svg?style=social
+- [`PARAMETER_REFERENCE.md`](./PARAMETER_REFERENCE.md) — every parameter with tooltip text (EN + RU), type, default, validation rule
+- [`FORM_COMPARISON_REPORT.md`](./FORM_COMPARISON_REPORT.md) — how much of the original `r.avaflow` form this wizard covers
+- [`KOLKA_CALIBRATION_REPORT.md`](./KOLKA_CALIBRATION_REPORT.md) — calibration recipe that reproduced the 2002 Kolka Glacier collapse (first external academic validation of the web-app)
+- [`QA_REPORT.md`](./QA_REPORT.md) — historical bug-fix log
+
+---
+
+## License
+
+Inherits **GNU GPLv2+** from the `r.avaflow` core — see the [top-level README](../README.md).

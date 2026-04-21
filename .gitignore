@@ -1,3 +1,6 @@
 .history
 .vscode
 .idea
+
+# Memory MCP
+.memory/
