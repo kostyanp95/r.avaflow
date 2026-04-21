@@ -156,7 +156,7 @@ npm install
 npm run start:dev   # NestJS на :3000, Angular на :4200 с hot-reload
 ```
 
-Подробности для разработчиков — `docs/ARCHITECTURE.md`.
+Подробности для разработчиков — [`web-app/README_ru.md`](./web-app/README_ru.md).
 
 ---
 
@@ -199,11 +199,10 @@ npm run start:dev   # NestJS на :3000, Angular на :4200 с hot-reload
 
 ## Документация
 
-- `docs/ARCHITECTURE.md` — архитектура, data flow, глоссарий, бенчмарки
-- `docs/computational-core-and-gpu.md` — внутренности C-ядра, NOC-TVD, OpenACC-регионы
-- `docs/modules-build-infrastructure.md` — физика, Python-обёртки, Docker, CI/CD
-- `docs/r-avaflow-3g-vs-40g-comparison.md` — подробное сравнение физики v3 vs v4
-- `web-app/PARAMETER_REFERENCE.md` — все параметры, все подсказки, все правила валидации
+- [`web-app/README_ru.md`](./web-app/README_ru.md) — руководство разработчика (стек, установка, сборка, API, WebSocket-события)
+- [`web-app/PARAMETER_REFERENCE.md`](./web-app/PARAMETER_REFERENCE.md) — все параметры, все подсказки, все правила валидации
+- [`web-app/FORM_COMPARISON_REPORT.md`](./web-app/FORM_COMPARISON_REPORT.md) — как wizard соотносится с оригинальной формой `r.avaflow`
+- [`web-app/KOLKA_CALIBRATION_REPORT.md`](./web-app/KOLKA_CALIBRATION_REPORT.md) — калибровка параметров для ледникового схода Колка 2002
 
 ---
 
@@ -220,7 +219,7 @@ Upstream тем временем выпустил **r.avaflow версию 4 (40
 - **Температура и таяние льда** — 10-е уравнение состояния с обменом скрытой теплотой.
 - **Обязательные topography-following высоты** (`h → h·cos β`) во всей модели.
 
-**3G → 40G — несовместимое изменение**: результаты напрямую не сопоставимы, откалиброванные параметрические наборы требуют повторной калибровки, а GRASS-интерфейс модуля другой. Поэтому сейчас web-app зафиксирован на 3G; миграция в roadmap ниже, детали — в `docs/r-avaflow-3g-vs-40g-comparison.md`.
+**3G → 40G — несовместимое изменение**: результаты напрямую не сопоставимы, откалиброванные параметрические наборы требуют повторной калибровки, а GRASS-интерфейс модуля другой. Поэтому сейчас web-app зафиксирован на 3G; миграция в roadmap ниже.
 
 ---
 

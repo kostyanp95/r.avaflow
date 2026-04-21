@@ -156,7 +156,7 @@ npm install
 npm run start:dev   # NestJS on :3000, Angular on :4200 with hot-reload
 ```
 
-Full developer notes — `docs/ARCHITECTURE.md`.
+Full developer notes — [`web-app/README.md`](./web-app/README.md).
 
 ---
 
@@ -199,11 +199,10 @@ Full developer notes — `docs/ARCHITECTURE.md`.
 
 ## Documentation
 
-- `docs/ARCHITECTURE.md` — full architecture, data flow, glossary, benchmarks
-- `docs/computational-core-and-gpu.md` — C core internals, NOC-TVD, OpenACC regions
-- `docs/modules-build-infrastructure.md` — physics, Python wrappers, Docker, CI/CD
-- `docs/r-avaflow-3g-vs-40g-comparison.md` — detailed v3 vs v4 physics diff
-- `web-app/PARAMETER_REFERENCE.md` — every parameter, every tooltip, every validation rule
+- [`web-app/README.md`](./web-app/README.md) — developer guide (stack, install, build, API, WebSocket events)
+- [`web-app/PARAMETER_REFERENCE.md`](./web-app/PARAMETER_REFERENCE.md) — every parameter, every tooltip, every validation rule
+- [`web-app/FORM_COMPARISON_REPORT.md`](./web-app/FORM_COMPARISON_REPORT.md) — how the wizard maps onto the original `r.avaflow` form
+- [`web-app/KOLKA_CALIBRATION_REPORT.md`](./web-app/KOLKA_CALIBRATION_REPORT.md) — calibration recipe for the 2002 Kolka Glacier case
 
 ---
 
@@ -220,7 +219,7 @@ Upstream has since released **r.avaflow version 4 (40G)** — a major rewrite pu
 - **Temperature & ice-melting coupling** — 10th state equation with latent heat exchange.
 - **Mandatory topography-following heights** (`h → h·cos β`) throughout.
 
-**3G → 40G is a breaking change** — results are not directly comparable, calibrated parameter sets must be re-calibrated, and the GRASS module interface is different. For this reason the web-app is currently pinned to 3G; migration is on the roadmap below and is tracked in `docs/r-avaflow-3g-vs-40g-comparison.md`.
+**3G → 40G is a breaking change** — results are not directly comparable, calibrated parameter sets must be re-calibrated, and the GRASS module interface is different. For this reason the web-app is currently pinned to 3G; migration is on the roadmap below.
 
 ---
 
