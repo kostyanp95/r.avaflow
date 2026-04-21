@@ -2,6 +2,9 @@
 .vscode
 .idea
 
+# Memory MCP
+.memory/
+
 # Local workspace configuration
 AGENTS.md
 CLAUDE.md
