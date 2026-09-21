@@ -6,6 +6,7 @@ on:
     paths:
       - 'r.avaflow/**'
       - 'r.avaflow.40G/**'
+      - 'web-app/**'
       - 'Dockerfile*'
       - '.github/workflows/**'
 
