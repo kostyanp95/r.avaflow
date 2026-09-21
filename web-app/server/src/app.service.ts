@@ -873,7 +873,10 @@ export class AppService {
     this.projectRasters = filesInfo;
 
     if (filesInfo.length > 0) {
-      this.appGateway.server.emit('filesUploaded', {
+      // Broadcast: the uploads pool is shared. emitToUser guards against
+      // the socket server not being initialized yet (controller constructor
+      // runs before main.ts wires io).
+      this.appGateway.emitToUser(null, 'filesUploaded', {
         filesUploaded: filesInfo,
       });
     }
