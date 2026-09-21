@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
 
@@ -16,6 +16,7 @@ import { DetailModule } from './detail/detail.module';
 
 import { AppComponent } from './app.component';
 import { WebSocketService } from './web-socket.service';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { en_US, NZ_I18N } from "ng-zorro-antd/i18n";
 import { NZ_ICONS } from 'ng-zorro-antd/icon';
 import { IconDefinition } from '@ant-design/icons-angular';
@@ -53,6 +54,11 @@ const httpLoaderFactory = (http: HttpClient): TranslateHttpLoader => new Transla
     {
       provide: NZ_ICONS,
       useValue: customIcons
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
     },
     WebSocketService],
   bootstrap: [AppComponent]

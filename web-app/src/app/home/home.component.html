@@ -30,43 +30,54 @@
         </div>
 
         <div class="project-list" *ngIf="projectsExpanded || isCollapsed">
-          <div
-            *ngFor="let project of projects"
-            class="project-item"
-            [class.active]="project.name === activeProjectName"
-            [class.disabled]="!project.hasJson"
-            (click)="project.hasJson && openProject(project)"
-            [title]="project.name">
-
-            <div class="project-icon">
-              <span nz-icon [nzType]="project.hasJson ? 'file-text' : 'file-unknown'" nzTheme="outline"></span>
+          <ng-container *ngFor="let group of projectGroups">
+            <!-- Per-user collapsible section (admins only) -->
+            <div class="project-group-header" *ngIf="group.label && !isCollapsed" (click)="toggleGroup(group.key)">
+              <span nz-icon [nzType]="isGroupExpanded(group.key) ? 'down' : 'right'" class="group-chevron"></span>
+              <span class="group-label">{{ group.label }}</span>
+              <span class="group-count">{{ group.projects.length }}</span>
             </div>
-            <span class="project-name" *ngIf="!isCollapsed">{{ project.name }}</span>
 
-            <!-- Status indicators -->
-            <span class="project-status" *ngIf="!isCollapsed">
-              <span *ngIf="project.hasJson" class="status-dot status-json" nz-tooltip [nzTooltipTitle]="'tooltips.jsonAvailable' | translate"></span>
-              <span *ngIf="project.hasScript" class="status-dot status-script" nz-tooltip [nzTooltipTitle]="'tooltips.scriptAvailable' | translate"></span>
-            </span>
+            <ng-container *ngIf="!group.label || isCollapsed || isGroupExpanded(group.key)">
+              <div
+                *ngFor="let project of group.projects"
+                class="project-item"
+                [class.active]="project.name === activeProjectName"
+                [class.disabled]="!project.hasJson"
+                (click)="project.hasJson && openProject(project)"
+                [title]="project.name">
 
-            <!-- Hover actions -->
-            <span class="project-actions" *ngIf="!isCollapsed">
-              <span *ngIf="project.hasScript" nz-icon nzType="play-circle" nzTheme="outline"
-                    class="action-btn action-run"
-                    nz-tooltip [nzTooltipTitle]="'common.run' | translate"
-                    (click)="runProject(project.name, $event)">
-              </span>
-              <span nz-icon nzType="delete" nzTheme="outline"
-                    class="action-btn action-delete"
-                    nz-tooltip [nzTooltipTitle]="'common.delete' | translate"
-                    nz-popconfirm
-                    [nzPopconfirmTitle]="('common.confirmDelete' | translate: {name: project.name})"
-                    nzPopconfirmPlacement="right"
-                    (nzOnConfirm)="deleteProject(project.name)"
-                    (click)="$event.stopPropagation()">
-              </span>
-            </span>
-          </div>
+                <div class="project-icon">
+                  <span nz-icon [nzType]="project.hasJson ? 'file-text' : 'file-unknown'" nzTheme="outline"></span>
+                </div>
+                <span class="project-name" *ngIf="!isCollapsed">{{ project.name }}</span>
+
+                <!-- Status indicators -->
+                <span class="project-status" *ngIf="!isCollapsed">
+                  <span *ngIf="project.hasJson" class="status-dot status-json" nz-tooltip [nzTooltipTitle]="'tooltips.jsonAvailable' | translate"></span>
+                  <span *ngIf="project.hasScript" class="status-dot status-script" nz-tooltip [nzTooltipTitle]="'tooltips.scriptAvailable' | translate"></span>
+                </span>
+
+                <!-- Hover actions -->
+                <span class="project-actions" *ngIf="!isCollapsed">
+                  <span *ngIf="project.hasScript" nz-icon nzType="play-circle" nzTheme="outline"
+                        class="action-btn action-run"
+                        nz-tooltip [nzTooltipTitle]="'common.run' | translate"
+                        (click)="runProject(project.name, $event)">
+                  </span>
+                  <span nz-icon nzType="delete" nzTheme="outline"
+                        class="action-btn action-delete"
+                        nz-tooltip [nzTooltipTitle]="'common.delete' | translate"
+                        nz-popconfirm
+                        [nzPopconfirmTitle]="('common.confirmDelete' | translate: {name: project.name})"
+                        nzPopconfirmPlacement="right"
+                        (nzOnConfirm)="deleteProject(project.name)"
+                        (click)="$event.stopPropagation()">
+                  </span>
+                </span>
+              </div>
+            </ng-container>
+          </ng-container>
 
           <!-- Empty state -->
           <div *ngIf="projects.length === 0" class="empty-state">
@@ -109,8 +120,28 @@
       </div>
     </div>
 
-    <!-- Sidebar footer: theme toggle + collapse -->
+    <!-- Sidebar footer: user chip + theme toggle + collapse -->
     <div class="sidebar-footer">
+      <!-- Signed-in user (only when auth is enabled) -->
+      <div class="user-chip" *ngIf="!isCollapsed && auth.authEnabled && auth.user">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <div class="user-name" [title]="auth.user.displayName">{{ auth.user.displayName }}</div>
+          <div class="user-badges" *ngIf="auth.user.admin">
+            <span class="user-admin-badge">{{ 'sidebar.admin' | translate }}</span>
+          </div>
+        </div>
+        <span nz-icon nzType="logout" nzTheme="outline"
+              class="user-logout"
+              nz-tooltip [nzTooltipTitle]="'sidebar.logout' | translate"
+              (click)="logout(); $event.stopPropagation()"></span>
+      </div>
+      <div class="user-chip-collapsed" *ngIf="isCollapsed && auth.authEnabled && auth.user"
+           (click)="logout()"
+           nz-tooltip [nzTooltipTitle]="('sidebar.logout' | translate) + ' — ' + auth.user.displayName" nzTooltipPlacement="right">
+        <div class="user-avatar">{{ userInitials }}</div>
+      </div>
+
       <!-- Theme toggle pill -->
       <div class="theme-toggle" *ngIf="!isCollapsed" (click)="toggleTheme()">
         <div class="theme-pill" [class.dark]="isDark">

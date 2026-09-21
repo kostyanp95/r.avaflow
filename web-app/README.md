@@ -161,6 +161,14 @@ Pre-built image: `ghcr.io/kostyanp95/r-avaflow:webapp-latest`.
 | `NODE_ENV` | — | `production` enables optimizations |
 | `AVAFLOW_PROJECTS_PATH` | `projects/` | Where per-project data is stored (mount this as a volume) |
 | `OMP_NUM_THREADS` | _(auto)_ | CPU thread count for the OpenMP-parallelized core |
+| `TG_AUTH_SECRET` | — | Enables Telegram-bot authorization (shared HMAC secret; empty = legacy open mode) |
+| `TG_BOT_TOKEN` | — | Bot token from @BotFather; the container with polling mints login tokens |
+| `TG_BOT_POLLING` | `true` | Set `false` on all but ONE container per bot token (Telegram allows a single `getUpdates` poller) |
+| `TG_ADMIN_IDS` | — | Comma-separated Telegram ids that see all users' projects |
+| `TG_BOT_USERNAME` | _(getMe)_ | Bot handle for t.me login links |
+| `TG_ALLOWED_IDS` | — | Optional registration allowlist; empty = open registration |
+
+Auth endpoints: `GET /api/auth/config`, `GET /api/auth/me`, `POST /api/auth/tg/exchange` `{token}`, `POST /api/auth/tg/widget` (official Login Widget callback), `POST /api/auth/logout`. Sessions live in an httpOnly cookie. Smoke test: `npm --prefix server run build && node server/scripts/auth-smoke-test.cjs`.
 
 ---
 

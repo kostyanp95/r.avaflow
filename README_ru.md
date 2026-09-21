@@ -160,6 +160,39 @@ npm run start:dev   # NestJS на :3000, Angular на :4200 с hot-reload
 
 ---
 
+## Авторизация через Telegram-бота
+
+Веб-приложение поддерживает персональный вход через Telegram-бота. Каждый
+пользователь видит **только свои проекты**; администраторы (`TG_ADMIN_IDS`)
+видят проекты всех пользователей, сгруппированные по юзеру в сворачиваемых
+секциях сайдбара.
+
+Как происходит вход (настройка домена в BotFather не нужна, работает на любом
+origin — публичном домене, IP в WireGuard или localhost):
+
+1. Страница входа ведёт на `https://t.me/<bot>?start=l_<base64url(origin)>`.
+2. Пользователь нажимает **Start**; бот присылает кнопку *«Войти»* и
+   одноразовый код (действует 10 минут).
+3. Браузер обменивает код на 30-дневную сессию в httpOnly-cookie.
+
+Конфигурация (всё опционально — без `TG_AUTH_SECRET` приложение работает в
+прежнему открытом режиме):
+
+| Переменная | Назначение |
+|---|---|
+| `TG_AUTH_SECRET` | Общий HMAC-секрет; включает авторизацию. Обязан совпадать на всех контейнерах. |
+| `TG_BOT_TOKEN` | Токен бота из @BotFather. Нужен на **одном** контейнере (он поллит `getUpdates`). |
+| `TG_ADMIN_IDS` | Telegram-ID администраторов через запятую — видят все проекты. |
+| `TG_BOT_USERNAME` | Юзернейм бота для t.me-ссылок (авто-резолвится через `getMe`, если есть токен). |
+| `TG_ALLOWED_IDS` | Опциональный allowlist регистрации; пусто = свободная регистрация. |
+
+Состояние (пользователи, владение проектами) живёт в
+`<projectsRoot>/.ravaflow-auth.json` на volume с проектами и переживает
+пересборку контейнеров. Производственный rollout и заметки о безопасности —
+в [`deploy/README.md`](./deploy/README.md).
+
+---
+
 ## Технологический стек
 
 <table>
@@ -200,6 +233,7 @@ npm run start:dev   # NestJS на :3000, Angular на :4200 с hot-reload
 ## Документация
 
 - [`web-app/README_ru.md`](./web-app/README_ru.md) — руководство разработчика (стек, установка, сборка, API, WebSocket-события)
+- [`deploy/README.md`](./deploy/README.md) — эксплуатация боевого деплоя на self-hosted хосте Windows / Docker Desktop
 - [`web-app/PARAMETER_REFERENCE.md`](./web-app/PARAMETER_REFERENCE.md) — все параметры, все подсказки, все правила валидации
 - [`web-app/FORM_COMPARISON_REPORT.md`](./web-app/FORM_COMPARISON_REPORT.md) — как wizard соотносится с оригинальной формой `r.avaflow`
 - [`web-app/KOLKA_CALIBRATION_REPORT.md`](./web-app/KOLKA_CALIBRATION_REPORT.md) — калибровка параметров для ледникового схода Колка 2002

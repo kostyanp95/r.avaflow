@@ -4,3 +4,6 @@
 
 # Memory MCP
 .memory/
+
+# Secrets for compose env interpolation
+.env

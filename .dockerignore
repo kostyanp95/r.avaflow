@@ -11,3 +11,6 @@ deploy
 .claude
 .mcp.json
 CLAUDE.md
+AGENTS.md
+.env
+.env.*

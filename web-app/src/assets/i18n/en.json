@@ -4,6 +4,10 @@
     "info": "INFO",
     "newProject": "New project",
     "noProjects": "No projects yet",
+    "myProjects": "My projects",
+    "noOwner": "No owner (legacy)",
+    "admin": "ADMIN",
+    "logout": "Sign out",
     "aboutAvaflow": "About r.avaflow",
     "aboutApp": "About this app",
     "documentation": "Documentation",
@@ -11,6 +15,24 @@
     "darkMode": "Dark mode",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"
+  },
+  "login": {
+    "title": "Sign in via Telegram",
+    "subtitle": "Access is personal: every user sees only their own projects.",
+    "step1": "Press “Open Telegram bot” — Telegram will open.",
+    "step2": "Press Start in Telegram; the bot will send a sign-in button and a code.",
+    "step3": "Return to the browser via the bot's button — or paste the code below.",
+    "openBot": "Open Telegram bot",
+    "noBot": "Telegram bot is not configured on this server.",
+    "or": "or",
+    "codeLabel": "Login code from the bot",
+    "codePlaceholder": "Paste the code the bot sent you…",
+    "codeButton": "Sign in",
+    "busy": "Signing in…",
+    "errorInvalid": "The code is invalid or expired. Send /login to the bot again."
+  },
+  "loginCallback": {
+    "inProgress": "Completing sign-in…"
   },
   "wizard": {
     "steps": {

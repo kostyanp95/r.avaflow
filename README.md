@@ -160,6 +160,38 @@ Full developer notes — [`web-app/README.md`](./web-app/README.md).
 
 ---
 
+## Authorization via Telegram bot
+
+The web app supports per-user login through a Telegram bot. Each user sees
+**only their own projects**; administrators (`TG_ADMIN_IDS`) see everyone's
+projects, grouped by user in collapsible sidebar sections.
+
+How a login works (no BotFather domain setup needed, works on any origin —
+public domain, WireGuard IP or localhost):
+
+1. The login page links to `https://t.me/<bot>?start=l_<base64url(origin)>`.
+2. The user presses **Start**; the bot replies with a *Sign in* button and a
+   one-time code (valid 10 minutes).
+3. The browser exchanges the code for a 30-day httpOnly-cookie session.
+
+Configuration (all optional — without `TG_AUTH_SECRET` the app runs in the
+legacy open mode):
+
+| Variable | Purpose |
+|---|---|
+| `TG_AUTH_SECRET` | Shared HMAC secret; enables auth. Must match across containers. |
+| `TG_BOT_TOKEN` | Bot token from @BotFather. Needed on **one** container only (it polls `getUpdates`). |
+| `TG_ADMIN_IDS` | Comma-separated Telegram user ids that see all projects. |
+| `TG_BOT_USERNAME` | Bot handle for t.me links (auto-resolved via `getMe` when the token is present). |
+| `TG_ALLOWED_IDS` | Optional registration allowlist; empty = open registration. |
+
+State (registered users, project ownership) lives in
+`<projectsRoot>/.ravaflow-auth.json` on the projects volume and survives
+container rebuilds. See [`deploy/README.md`](./deploy/README.md) for the
+production rollout and security notes.
+
+---
+
 ## Tech stack
 
 <table>
@@ -200,6 +232,7 @@ Full developer notes — [`web-app/README.md`](./web-app/README.md).
 ## Documentation
 
 - [`web-app/README.md`](./web-app/README.md) — developer guide (stack, install, build, API, WebSocket events)
+- [`deploy/README.md`](./deploy/README.md) — production deployment & operations on the self-hosted Windows / Docker Desktop host (RU)
 - [`web-app/PARAMETER_REFERENCE.md`](./web-app/PARAMETER_REFERENCE.md) — every parameter, every tooltip, every validation rule
 - [`web-app/FORM_COMPARISON_REPORT.md`](./web-app/FORM_COMPARISON_REPORT.md) — how the wizard maps onto the original `r.avaflow` form
 - [`web-app/KOLKA_CALIBRATION_REPORT.md`](./web-app/KOLKA_CALIBRATION_REPORT.md) — calibration recipe for the 2002 Kolka Glacier case

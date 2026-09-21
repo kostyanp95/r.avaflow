@@ -4,9 +4,11 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppGateway } from './app.gateway';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'static'),
       exclude: ['/api*', '/socket.io*'],

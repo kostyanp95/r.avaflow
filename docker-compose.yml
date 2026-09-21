@@ -13,8 +13,16 @@ services:
       - NODE_ENV=production
       - AVAFLOW_MODULE=r.avaflow
       - AVAFLOW_PROJECTS_PATH=/data/projects
+      # --- Telegram-bot authorization (see deploy/README.md) ---
+      # Copy .env.example to .env next to this file and fill in values.
+      - TG_AUTH_SECRET=${TG_AUTH_SECRET:-}
+      - TG_ADMIN_IDS=${TG_ADMIN_IDS:-}
+      - TG_BOT_USERNAME=${TG_BOT_USERNAME:-web_r_avaflow_bot}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN:-}
+      # This service polls the bot (exactly ONE poller per bot token allowed).
+      - TG_BOT_POLLING=${TG_BOT_POLLING:-true}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -32,8 +40,17 @@ services:
       - AVAFLOW_MODULE=r.avaflow.40G
       - AVAFLOW_PROJECTS_PATH=/data/projects
       - OMP_NUM_THREADS=8
+      # --- Telegram-bot authorization ---
+      # Same TG_AUTH_SECRET as classic: login tokens minted by the classic
+      # container's bot are verified here statelessly.
+      - TG_AUTH_SECRET=${TG_AUTH_SECRET:-}
+      - TG_ADMIN_IDS=${TG_ADMIN_IDS:-}
+      - TG_BOT_USERNAME=${TG_BOT_USERNAME:-web_r_avaflow_bot}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN:-}
+      # No polling here — only classic may call getUpdates.
+      - TG_BOT_POLLING=false
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3

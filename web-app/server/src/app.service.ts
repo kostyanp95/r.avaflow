@@ -5,6 +5,9 @@ import * as path from 'path';
 import * as http from 'http';
 import { spawn, ChildProcess, execSync } from 'child_process';
 import { AppGateway } from './app.gateway';
+import { AuthUser } from './auth/auth.service';
+import { authStore } from './auth/auth-store';
+import { resolveProjectsRoot } from './paths';
 import { promisify } from 'util';
 
 const readFile = promisify(fs.readFile);
@@ -28,6 +31,7 @@ export interface ProjectSummary {
   name: string;
   hasJson: boolean;
   hasScript: boolean;
+  owner?: { id: number; name: string } | null;
 }
 
 export interface ResultFile {
@@ -94,9 +98,7 @@ const SCALAR_DEFAULTS: Record<string, number> = {
 export class AppService {
   projectRasters: Array<Rasters>;
   private readonly avaflowModule = process.env.AVAFLOW_MODULE || 'r.avaflow';
-  projectsRoot =
-    process.env.AVAFLOW_PROJECTS_PATH ||
-    path.resolve(__dirname, '..', '..', '..', 'projects');
+  projectsRoot = resolveProjectsRoot();
   uploadsPath = path.join(this.projectsRoot, 'uploads');
 
   constructor(private readonly appGateway: AppGateway) {}
@@ -597,7 +599,10 @@ export class AppService {
     }
   }
 
-  async saveFiles(files: Express.Multer.File[]): Promise<any> {
+  async saveFiles(
+    files: Express.Multer.File[],
+    ownerId: number | null = null,
+  ): Promise<any> {
     const filesInfo = files.map((file) => {
       const info: any = { name: file.originalname, path: file.path };
       if (file.originalname.match(/\.(tif|tiff)$/i)) {
@@ -606,7 +611,7 @@ export class AppService {
       return info;
     });
 
-    this.appGateway.server.emit('filesUploaded', { filesUploaded: filesInfo });
+    this.appGateway.emitToUser(ownerId, 'filesUploaded', { filesUploaded: filesInfo });
 
     return {
       message: 'Files uploaded successfully',
@@ -636,8 +641,12 @@ export class AppService {
   }
 
   private runningProcess: ChildProcess | null = null;
+  private currentRunOwnerId: number | null = null;
 
-  runSimulation(projectName: string): { success: boolean; message: string } {
+  runSimulation(
+    projectName: string,
+    ownerId: number | null = null,
+  ): { success: boolean; message: string } {
     if (this.runningProcess) {
       return { success: false, message: 'A simulation is already running' };
     }
@@ -652,14 +661,15 @@ export class AppService {
     ]);
 
     this.runningProcess = child;
+    this.currentRunOwnerId = ownerId;
 
     const statsInterval = setInterval(() => {
       const stats = this.getSimulationStats();
-      this.appGateway.server.emit('simulationStats', stats);
+      this.appGateway.emitToUser(this.currentRunOwnerId, 'simulationStats', stats);
     }, 5000);
 
     const emitLine = (line: string) => {
-      this.appGateway.server.emit('simulationLog', {
+      this.appGateway.emitToUser(this.currentRunOwnerId, 'simulationLog', {
         line,
         timestamp: Date.now(),
       });
@@ -678,30 +688,46 @@ export class AppService {
     child.on('close', (exitCode: number) => {
       clearInterval(statsInterval);
       this.runningProcess = null;
-      this.appGateway.server.emit('simulationDone', {
+      this.appGateway.emitToUser(this.currentRunOwnerId, 'simulationDone', {
         projectName: safeName,
         exitCode: exitCode ?? 1,
         success: exitCode === 0,
       });
+      this.currentRunOwnerId = null;
     });
 
     child.on('error', (err: Error) => {
       clearInterval(statsInterval);
       this.runningProcess = null;
       emitLine(`Error spawning GRASS: ${err.message}`);
-      this.appGateway.server.emit('simulationDone', {
+      this.appGateway.emitToUser(this.currentRunOwnerId, 'simulationDone', {
         projectName: safeName,
         exitCode: 1,
         success: false,
       });
+      this.currentRunOwnerId = null;
     });
 
     return { success: true, message: `Simulation started for project: ${safeName}` };
   }
 
-  stopSimulation(): { success: boolean; message: string } {
+  stopSimulation(
+    user: { id: number; admin: boolean } | null = null,
+  ): { success: boolean; message: string } {
     if (!this.runningProcess) {
       return { success: false, message: 'No simulation is currently running' };
+    }
+
+    if (
+      user &&
+      this.currentRunOwnerId !== null &&
+      this.currentRunOwnerId !== user.id &&
+      !user.admin
+    ) {
+      return {
+        success: false,
+        message: 'The running simulation belongs to another user',
+      };
     }
 
     this.runningProcess.kill();
@@ -797,19 +823,32 @@ export class AppService {
     return results;
   }
 
-  async listProjects(): Promise<ProjectSummary[]> {
+  async listProjects(user?: AuthUser | null): Promise<ProjectSummary[]> {
     if (!fs.existsSync(this.projectsRoot)) return [];
     const entries = await fsPromises.readdir(this.projectsRoot, { withFileTypes: true });
     const projects: ProjectSummary[] = [];
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name === 'uploads') continue;
-      const jsonPath = path.join(this.projectsRoot, entry.name, `${entry.name}.json`);
-      const shPath = path.join(this.projectsRoot, entry.name, `${entry.name}.sh`);
-      projects.push({
-        name: entry.name,
-        hasJson: fs.existsSync(jsonPath),
-        hasScript: fs.existsSync(shPath),
-      });
+      if (user) {
+        // Regular users see only their own projects; admins see everything
+        // (including legacy projects without an owner).
+        const ownerId = authStore.getOwner(entry.name);
+        if (!user.admin && ownerId !== user.id) continue;
+        projects.push({
+          name: entry.name,
+          hasJson: fs.existsSync(path.join(this.projectsRoot, entry.name, `${entry.name}.json`)),
+          hasScript: fs.existsSync(path.join(this.projectsRoot, entry.name, `${entry.name}.sh`)),
+          owner: ownerId !== null
+            ? { id: ownerId, name: authStore.displayName(ownerId) }
+            : null,
+        });
+      } else {
+        projects.push({
+          name: entry.name,
+          hasJson: fs.existsSync(path.join(this.projectsRoot, entry.name, `${entry.name}.json`)),
+          hasScript: fs.existsSync(path.join(this.projectsRoot, entry.name, `${entry.name}.sh`)),
+        });
+      }
     }
     return projects;
   }

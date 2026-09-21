@@ -278,6 +278,7 @@
           [nzMultiple]="true"
           nzName="file"
           [nzData]="{ projectName: setupForm.value.name }"
+          [nzWithCredentials]="true"
           [nzAccept]="'.tif,.tiff,.asc'"
           (nzChange)="handleUploadChange($event)">
           <p class="ant-upload-drag-icon">

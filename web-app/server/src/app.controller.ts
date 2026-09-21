@@ -6,6 +6,7 @@ import {
   Put,
   Body,
   Param,
+  Req,
   Res,
   UploadedFiles,
   UseInterceptors,
@@ -18,20 +19,26 @@ import { AppService, Project, ProjectSummary, ResultFile } from './app.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { storageOptions } from './storage-options';
 import { AppGateway } from './app.gateway';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as archiver from 'archiver';
+import { AuthService, AuthUser } from './auth/auth.service';
+import { AdminOnly, Public } from './auth/auth.decorators';
+import { authConfig } from './auth/auth.config';
+import { authStore } from './auth/auth-store';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly appGateway: AppGateway,
+    private readonly authService: AuthService,
   ) {
     this.appService.checkProjectDataDirectory();
   }
 
+  @Public()
   @Get('health')
   getHealth(): { status: string; timestamp: number } {
     return { status: 'ok', timestamp: Date.now() };
@@ -45,10 +52,13 @@ export class AppController {
   @Get('project')
   async getProject(
     @Query('projectName') projectName: string,
+    @Req() req: Request,
   ): Promise<Project | null> {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, projectName);
     try {
       const jsonData: Project = await this.appService.getProjectByName(projectName);
-      this.appGateway.server.emit('projectData', jsonData);
+      this.appGateway.emitToUser(user?.id ?? null, 'projectData', jsonData);
       return jsonData;
     } catch (error) {
       console.error('Error getting project data:', error);
@@ -57,13 +67,21 @@ export class AppController {
   }
 
   @Get('projects')
-  listProjects(): Promise<ProjectSummary[]> {
-    return this.appService.listProjects();
+  listProjects(@Req() req: Request): Promise<ProjectSummary[]> {
+    return this.appService.listProjects((req as any).user as AuthUser | undefined);
   }
 
   @Delete('project/:name')
-  async deleteProject(@Param('name') name: string): Promise<{ message: string }> {
+  async deleteProject(
+    @Param('name') name: string,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, name);
     await this.appService.deleteProject(name);
+    if (authConfig.enabled) {
+      authStore.removeOwner(name);
+    }
     return { message: `Project "${name}" deleted` };
   }
 
@@ -73,18 +91,42 @@ export class AppController {
   }
 
   @Post('experiment')
-  createExperiment(@Body() projectData: Project) {
-    return this.appService.createBashScriptFile(projectData);
+  createExperiment(@Body() projectData: Project, @Req() req: Request) {
+    const user = (req as any).user as AuthUser | undefined;
+    if (authConfig.enabled && user) {
+      const existingOwner = authStore.getOwner(projectData?.name);
+      if (existingOwner !== null && existingOwner !== user.id) {
+        throw new BadRequestException(
+          `Project "${projectData.name}" already belongs to another user`,
+        );
+      }
+    }
+    const result = this.appService.createBashScriptFile(projectData);
+    if (authConfig.enabled && user) {
+      // Claim ownership on creation (or keep own/absent ownership).
+      if (authStore.getOwner(projectData.name) == null) {
+        authStore.setOwner(projectData.name, user.id);
+      }
+    }
+    return result;
   }
 
   @Post('run')
-  runSimulation(@Body() body: { projectName: string }) {
-    return this.appService.runSimulation(body.projectName);
+  runSimulation(@Body() body: { projectName: string }, @Req() req: Request) {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, body?.projectName);
+    return this.appService.runSimulation(
+      body.projectName,
+      authConfig.enabled ? user?.id ?? null : null,
+    );
   }
 
   @Post('run/stop')
-  stopSimulation() {
-    return this.appService.stopSimulation();
+  stopSimulation(@Req() req: Request) {
+    const user = (req as any).user as AuthUser | undefined;
+    return this.appService.stopSimulation(
+      authConfig.enabled ? user ?? null : null,
+    );
   }
 
   @Get('run/cpus')
@@ -93,6 +135,7 @@ export class AppController {
   }
 
   @Put('run/cpus')
+  @AdminOnly()
   updateCpus(@Body() body: { cpus: number }) {
     return this.appService.updateCpuLimit(body.cpus);
   }
@@ -103,12 +146,16 @@ export class AppController {
   }
 
   @Get('project/:name/files')
-  listProjectFiles(@Param('name') name: string) {
+  listProjectFiles(@Param('name') name: string, @Req() req: Request) {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, name);
     return this.appService.listProjectFiles(name);
   }
 
   @Get('project/:name/results')
-  async listResults(@Param('name') name: string): Promise<ResultFile[]> {
+  async listResults(@Param('name') name: string, @Req() req: Request): Promise<ResultFile[]> {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, name);
     try {
       return await this.appService.listResultFiles(name);
     } catch (error) {
@@ -119,8 +166,12 @@ export class AppController {
   @Get('project/:name/results/download')
   async downloadResults(
     @Param('name') name: string,
+    @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, name);
+
     let projectPath: string;
     try {
       projectPath = this.appService.getProjectPath(name);
@@ -153,7 +204,11 @@ export class AppController {
   async getResultFile(
     @Param('name') name: string,
     @Param() params: Record<string, string>,
+    @Req() req: Request,
   ): Promise<StreamableFile> {
+    const user = (req as any).user as AuthUser | undefined;
+    this.authService.assertProjectAccess(user ?? null, name);
+
     // NestJS wildcard params come as params['0']
     const filepath = params['0'];
     if (!filepath) {
@@ -189,7 +244,11 @@ export class AppController {
 
   @Post('upload')
   @UseInterceptors(FilesInterceptor('file', null, { storage: storageOptions }))
-  async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[]) {
-    return this.appService.saveFiles(files);
+  async uploadMultipleFiles(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user as AuthUser | undefined;
+    return this.appService.saveFiles(files, authConfig.enabled ? user?.id ?? null : null);
   }
 }

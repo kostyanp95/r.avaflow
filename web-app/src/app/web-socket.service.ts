@@ -15,7 +15,7 @@ function getSocketUrl(): string {
   providedIn: 'root'
 })
 export class WebSocketService {
- socket$: Socket = io(getSocketUrl());
+ socket$: Socket = io(getSocketUrl(), { withCredentials: true });
 
   webSocketConnect(): Observable<any> {
     return new Observable((observer) => {
