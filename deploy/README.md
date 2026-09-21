@@ -10,7 +10,7 @@ _Обновлено: 2026-09-21 · Основной источник синхр�
 
 - **Хост:** RGT-PC — Windows 11 Pro, LAN `192.168.0.76`, wg0 `10.1.0.23`, wg1 `10.3.0.23`.
 - **Платформа:** Docker Desktop 4.90 (engine 29.7.2), WSL2 backend (дистрибутивы `docker-desktop`, `Ubuntu-22.04`). На этом же движке живут чужие контейнеры (bms-coop и др.) — см. [изоляция проектов](#изоляция-compose-проектов).
-- **Compose-проект:** `ravaflow40g`, compose-файл — [`docker-compose.yml`](../docker-compose.yml) в корне репо.
+- **Compose-проект:** развёрнутый compose — `C:\Docker\docker-compose.yml` на RGT-PC, **compose-проект называется `docker`** (дефолт от каталога; до 2026-09-22 в доках ошибочно указывался `ravaflow40g`); тома при этом external `ravaflow40g_*`. Репо-версия — [`docker-compose.yml`](../docker-compose.yml) в корне (без docker.sock-маунта и prod-env).
 - **Образы:** `ghcr.io/kostyanp95/r-avaflow` — собирает GitHub Actions ([build-and-push.yml](../.github/workflows/build-and-push.yml)) при push в `main`/`master`:
   - `Dockerfile.prod` → `webapp-latest` (classic, r.avaflow 3G);
   - `Dockerfile.prod-40g` → `webapp-40g-latest` (r.avaflow 40G, OpenMP).
@@ -50,21 +50,31 @@ Restart-политика `unless-stopped`; healthcheck — `curl -f localhost:30
 
 Персональный доступ: каждый пользователь видит **только свои проекты**; администраторы — проекты всех, сгруппированные по юзеру (сворачиваемые секции в сайдбаре). Вход: кнопка «Открыть Telegram-бота» на странице логина → Start в Telegram → кнопка «Войти»/код из бота → 30-дневная сессия в httpOnly-cookie.
 
-**Архитектура (важно для двух контейнеров):** Telegram разрешает ровно **один** `getUpdates`-поллер на токен бота. Поэтому токен бота фактически работает на `avaflow-classic` (`TG_BOT_POLLING` не отключён), а `avaflow-40g` только **проверяет** одноразовые логин-токены общим секретом `TG_AUTH_SECRET` (stateless: юзер может начать вход на :3002 — бот на classic отдаст ссылку обратно на origin :3002, 40G проверит токен сам). Владение/пользователи хранятся в `/data/projects/.ravaflow-auth.json` **в каждом томе отдельно** (у classic и 40G пользователи/владельцы независимы — это разные инсталляции данных).
+**Архитектура (важно):** Telegram разрешает ровно **один** `getUpdates`-поллер на токен бота, а **RGT-PC не может достучаться до api.telegram.org** (грабля №10). Поэтому поллер бота живёт **на RPi4** (`10.1.0.30`, systemd-сервис `ravaflow-tg-bot`, автозапуск): он принимает `/start`, минтит одноразовые логин-токены **общим секретом `TG_AUTH_SECRET`** и возвращает ссылку на origin, с которого юзер начал вход (публичный URL или wg-IP). Контейнеры на RGT-PC оба работают с `TG_BOT_POLLING=false` и только **проверяют** токены (stateless — общая БД не нужна). Владение/пользователи хранятся в `/data/projects/.ravaflow-auth.json` **в каждом томе отдельно** (у classic и 40G пользователи/владельцы независимы).
 
-### Env-переменные (в проде добавить в `C:\Docker\docker-compose.yml`, значения — из репо-`.env`)
+### Env-переменные (задеплоено в `C:\Docker\docker-compose.yml` 2026-09-22)
 
 ```yaml
-# avaflow-classic:
-  TG_AUTH_SECRET: <openssl rand -hex 32, ОДИНАКОВО для classic и 40g>
+# оба сервиса (classic и 40g):
+  TG_AUTH_SECRET: <openssl rand -hex 32, одинаковый везде, включая RPi4>
   TG_ADMIN_IDS: "1049276038,262857249"
   TG_BOT_USERNAME: web_r_avaflow_bot
-  TG_BOT_TOKEN: 8856171498:AAH...   # токен @web_r_avaflow_bot; поллит только classic
-  TG_BOT_POLLING: "true"            # ровно на одном сервисе!
-# avaflow-40g — то же, но TG_BOT_POLLING: "false"
+  TG_BOT_POLLING: "false"            # поллер — на RPi4, не в контейнерах
+# TG_BOT_TOKEN в прод-compose больше не нужен (есть на RPi4); сейчас на classic
+# остаётся выставленным с polling=false — безвреден, при желании убрать.
 ```
 
-Порядок rollout: пересобрать/запулить новые образы → добавить env в оба сервиса → `docker compose -p ravaflow40g up -d` (пересоздаёт контейнеры, ~10–20 с даунтайма) → проверить `curl http://localhost:3001/api/auth/config` → `{"enabled":true,"botUsername":"web_r_avaflow_bot"}` → в логах classic: `[auth] Telegram bot @web_r_avaflow_bot connected` → зайти по публичному URL и войти через бота.
+**Роли:**
+- **RPi4** (`10.1.0.30`, ssh `kosty@10.1.0.30`): `~/ravaflow-tg-bot/` (4 js-файла из `web-app/server/dist/auth/` + лаунчер), сервис `ravaflow-tg-bot.service` (env: TG_BOT_TOKEN + TG_AUTH_SECRET, `Restart=always`). Логи: `journalctl -u ravaflow-tg-bot -f`. Обновление кода бота = пересобрать `web-app/server`, скопировать заново `auth.config.js`, `tokens.js`, `telegram-bot.js`, `sudo systemctl restart ravaflow-tg-bot`. Ротация секрета = поменять в сервисе RPi4 **и** в обоих сервисах compose + рестарты.
+- **RGT-PC**: проверка сессий/токенов, вся бизнес-логика. Секрет в `C:\Docker\docker-compose.yml` (бэкап `docker-compose.yml.pre-auth-2026-09-21.bak`); копия секрета на воркстации разработки: `%TEMP%\prod-tg-secret.txt`.
+
+### Запись о деплое (2026-09-22)
+
+- Образы собраны на **воркстации разработки** (`D:\r.avaflow.40G`, там есть оба дерева исходников; на RGT-PC исходников нет): `Dockerfile.prod` (контекст = корень репо) и `Dockerfile.prod-40g` (контекст = **родительский каталог** `D:\r.avaflow.40G`, там лежит `r.avaflow.40G/`). Родителю нужен `.dockerignore` (уже в репо-синке: `**/node_modules`, `**/.angular` — иначе контекст раздувается до 4 ГБ).
+- Перенос на RGT-PC: `docker save <оба образа> | gzip` (~1 ГБ) → чанки 64 МБ → scp по **wg1** (10.3.0.23; wg0 через одноядерный Keenetic медленнее) → склейка PowerShell-стримом → `docker load`. Чанки по 200 МБ не пролезают — wg рвёт scp через ~45–80 с; 64 МБ проходят. Скрипт-конвейер: `%TEMP%\ravaflow-pipeline-v2.sh` на воркстации (MD5-верификация чанков обязательна — повторный прогон с чанками старого размера молча склеит битый архив).
+- После load: `docker compose -p docker -f C:\Docker\docker-compose.yml up -d`. ⚠️ **Compose-проект называется `docker`** (от каталога `C:\Docker`), не `ravaflow40g` — команды с `-p ravaflow40g` падают конфликтом имён контейнеров. Тома при этом external `ravaflow40g_*`.
+- CI (GitHub Actions) с 2026-09-22 **реально собирает и пушит `webapp-latest`** из master (до этого workflow был сломан ~5 месяцев — неверный контекст `./r.avaflow`, все ранны красные). `webapp-40g-latest` CI собрать не может (исходники движка вне репо) — только локальная сборка.
+- Верификация после деплоя: контейнеры healthy; `GET /api/auth/config` → `{"enabled":true,...}` на :3001/:3002 и через публичный URL; без сессии `/api/projects` → 401; обмен токена → админ видит все 10 classic-проектов как legacy, на :3002 только `bashkara_cal2` (= порты не перекрестились); `journalctl -u ravaflow-tg-bot` → `polling started`.
 
 ### Эксплуатация
 
@@ -90,8 +100,9 @@ CI пушит новые образы в ghcr.io; на RGT-PC забрать и 
 
 ```powershell
 # ВНИМАНИЕ: из SSH-сессии pull НЕ работает (см. грабли №2) — только интерактивная сессия RGT-PC
-docker compose -p ravaflow40g pull
-docker compose -p ravaflow40g up -d
+# Проект называется docker (см. «Где крутится»); файл — C:\Docker\docker-compose.yml
+docker compose -p docker -f C:\Docker\docker-compose.yml pull
+docker compose -p docker -f C:\Docker\docker-compose.yml up -d
 ```
 
 [`deploy/avaflow-deploy.sh`](avaflow-deploy.sh) — pull-based деплой под crontab (`*/5 * * * *`, сравнивает digest'ы, при обновлении делает `pull` + `up -d`).
@@ -103,15 +114,15 @@ docker compose -p ravaflow40g up -d
 ## Ops-команды
 
 ```powershell
-docker compose -p ravaflow40g ps                          # статус (ожидается healthy)
+docker compose -p docker -f C:\Docker\docker-compose.yml ps   # статус (ожидается healthy); проект называется docker!
 docker logs --tail 50 avaflow-classic                     # логи classic
 docker logs --tail 50 avaflow-40g                         # логи 40g
-docker compose -p ravaflow40g restart                     # рестарт обоих
+docker compose -p docker -f C:\Docker\docker-compose.yml restart  # рестарт обоих
 docker volume ls | findstr ravaflow40g                    # тома с данными
 curl.exe -s http://localhost:3001/health                  # {"status":"ok",...} = API жив (путь /health, НЕ /api/health)
 curl.exe -s https://r-avaflow.kostyanp95.crazedns.ru/health   # то же через публичный URL
 curl.exe -s http://localhost:3001/api/auth/config        # {"enabled":true,"botUsername":"web_r_avaflow_bot"} = авторизация включена
-docker logs --tail 20 avaflow-classic | findstr auth     # "[auth] Telegram bot ... connected" / 409-предупреждения
+ssh kosty@10.1.0.30 "journalctl -u ravaflow-tg-bot -n 20 --no-pager"   # поллер бота (RPi4)
 ```
 
 ---
@@ -191,9 +202,13 @@ Docker Desktop с WSL-integration публикует порты контейне
 
 ### 9. Два getUpdates-поллера на один токен бота = 409 (2026-09-21)
 
-Если `TG_BOT_TOKEN` задан обоим контейнерам **с включённым polling**, Telegram отвечает `409 Conflict: terminated by other getUpdates request` — апдейты будут доставляться вперемешку (вход через бота станет флапающим). **Правило:** `TG_BOT_POLLING: "true"` ровно на одном сервисе (classic); 40G всегда `"false"` — он проверяет логин-токены секретом `TG_AUTH_SECRET`, бот ему не нужен. Сервер переживает 409 корректно (backoff + предупреждение в лог раз в 5 мин), но это сигнал, что конфиг неверен.
+Если `TG_BOT_TOKEN` задан двум процессам **с включённым polling**, Telegram отвечает `409 Conflict: terminated by other getUpdates request` — апдейты доставляются вперемешку. **Правило:** поллер ровно один; сейчас это `ravaflow-tg-bot.service` на RPi4 (см. секцию авторизации), контейнеры — `TG_BOT_POLLING=false`. Сервер переживает 409 корректно (backoff + предупреждение в лог), но это сигнал, что конфиг неверен.
 
 Смежное: после включения авторизации легаси-проекты без владельца исчезают у обычных юзеров (это фича, не баг) — админы видят их в секции «Без владельца».
+
+### 10. RGT-PC не достаёт api.telegram.org (2026-09-22)
+
+Из контейнеров (и с хоста) RGT-PC соединения к `api.telegram.org` получают `ECONNREFUSED` (резолв есть, коннект запрещён — линия/провайдер). Поэтому поллер Telegram-бота поднят **на RPi4** `10.1.0.30` (systemd `ravaflow-tg-bot`), где Telegram доступен. Благодаря stateless-токенам это не требует никакого обмена состояниями с RGT-PC — только общий `TG_AUTH_SECRET`. Если бот перестал отвечать: `ssh kosty@10.1.0.30 'systemctl status ravaflow-tg-bot'`; если RPi перезагружался — сервис поднимется сам (enabled).
 
 ---
 
