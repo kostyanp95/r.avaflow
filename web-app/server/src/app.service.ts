@@ -834,7 +834,7 @@ export class AppService {
     this.projectRasters = filesInfo;
 
     if (filesInfo.length > 0) {
-      this.appGateway.server.emit('filesUploaded', {
+      this.appGateway.server?.emit('filesUploaded', {
         filesUploaded: filesInfo,
       });
     }

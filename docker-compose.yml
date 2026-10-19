@@ -14,7 +14,7 @@ services:
       - AVAFLOW_MODULE=r.avaflow
       - AVAFLOW_PROJECTS_PATH=/data/projects
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -33,7 +33,7 @@ services:
       - AVAFLOW_PROJECTS_PATH=/data/projects
       - OMP_NUM_THREADS=8
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
