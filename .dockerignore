@@ -1,6 +1,9 @@
 node_modules
+**/node_modules
 .git
-.github
+**/.angular
+**/dist
+**/coverage
 dist
 projects
 *.zip
@@ -11,3 +14,6 @@ deploy
 .claude
 .mcp.json
 CLAUDE.md
+AGENTS.md
+.env
+.env.*
